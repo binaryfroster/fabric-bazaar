@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — {{ brand_name }}{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-card__brand">
+      <div class="auth-card__logo">🧵 {{ brand_name }}</div>
+    </div>
+    <h1>Welcome back</h1>
+    <p class="auth-card__sub">Sign in to continue shopping</p>
+
+    <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="form-group">
+        {{ form.email.label(class='form-label') }}
+        {{ form.email(class='form-control', placeholder='you@example.com', autofocus=true) }}
+        {% if form.email.errors %}<div style="color:var(--danger);font-size:.78rem;margin-top:.25rem;">{{ form.email.errors[0] }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        {{ form.password.label(class='form-label') }}
+        {{ form.password(class='form-control', placeholder='••••••••') }}
+        {% if form.password.errors %}<div style="color:var(--danger);font-size:.78rem;margin-top:.25rem;">{{ form.password.errors[0] }}</div>{% endif %}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer;">
+          {{ form.remember(style='width:16px;height:16px;cursor:pointer;') }}
+          Keep me signed in
+        </label>
+      </div>
+      <button type="submit" class="btn btn--primary btn--full btn--lg">Sign In</button>
+    </form>
+
+    <div class="auth-divider">or</div>
+
+    <div style="text-align:center;font-size:.88rem;color:var(--text-muted);">
+      Don't have an account?
+      <a href="{{ url_for('auth.register') }}" style="color:var(--primary);font-weight:600;">Create one free →</a>
+    </div>
+
+    <!-- Demo credentials -->
+    <div style="margin-top:1.5rem;background:var(--bg-alt);border-radius:10px;padding:1rem;">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.6rem;">Demo Accounts</div>
+      <div style="font-size:.78rem;color:var(--text-dark);line-height:2;">
+        <strong>Customer:</strong> amit@example.com / Customer@1<br>
+        <strong>Seller:</strong> rajesh@sharmatextiles.com / Seller@1234<br>
+        <strong>Admin:</strong> admin@fabricbazaar.in / Admin@1234
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

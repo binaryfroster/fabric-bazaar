@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}All Users{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+    <div class="dashboard__topbar"><h1>All Users</h1></div>
+
+    <form method="get" class="filter-bar">
+      <input type="text" name="q" value="{{ search }}" placeholder="Search name or email…"
+             class="form-control" style="max-width:260px;">
+      <select name="role" class="form-control" style="max-width:160px;" onchange="this.form.submit()">
+        <option value=""         {% if not role         %}selected{% endif %}>All Roles</option>
+        <option value="customer" {% if role=='customer' %}selected{% endif %}>Customers</option>
+        <option value="company"  {% if role=='company'  %}selected{% endif %}>Sellers</option>
+        <option value="admin"    {% if role=='admin'    %}selected{% endif %}>Admins</option>
+      </select>
+      <button type="submit" class="btn btn--outline">Filter</button>
+    </form>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Company</th>
+          <th>Joined</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users.items %}
+        <tr>
+          <td><strong>{{ u.full_name }}</strong></td>
+          <td>{{ u.email }}</td>
+          <td>
+            <span class="badge badge--{{
+              'danger' if u.is_admin else
+              'info'   if u.is_company else 'muted' }}">
+              {{ u.role.title() }}
+            </span>
+          </td>
+          <td>
+            {% if u.company %}
+              <a href="{{ url_for('admin.company_detail', cid=u.company.id) }}">{{ u.company.name }}</a>
+              {% if u.company.is_verified %}
+                <span class="badge badge--success" style="font-size:.65rem;">✓</span>
+              {% else %}
+                <span class="badge badge--warn" style="font-size:.65rem;">pending</span>
+              {% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td>{{ u.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <span class="badge badge--{{ 'success' if u.is_active else 'danger' }}">
+              {{ 'Active' if u.is_active else 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            {% if u.id != current_user.id %}
+            <form method="POST" action="{{ url_for('admin.toggle_user', uid=u.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn--xs btn--{{ 'danger' if u.is_active else 'success' }}"
+                      onclick="return confirm('{{ 'Deactivate' if u.is_active else 'Activate' }} this user?')">
+                {{ '🚫 Deactivate' if u.is_active else '✓ Activate' }}
+              </button>
+            </form>
+            {% else %}
+              <span style="color:var(--text-muted);font-size:.8rem;">(you)</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">
+            No users found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if users.pages > 1 %}
+    <div class="pagination">
+      {% if users.has_prev %}
+        <a href="?page={{ users.prev_num }}&role={{ role }}&q={{ search }}"
+           class="btn btn--outline btn--sm">← Prev</a>
+      {% endif %}
+      <span>Page {{ users.page }} of {{ users.pages }}</span>
+      {% if users.has_next %}
+        <a href="?page={{ users.next_num }}&role={{ role }}&q={{ search }}"
+           class="btn btn--outline btn--sm">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

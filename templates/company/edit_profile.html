@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Edit Company Profile{% endblock %}
+{% block content %}
+<div class="container" style="max-width:800px;padding:2rem 1rem;">
+  <div class="page-header">
+    <a href="{{ url_for('company.view_profile') }}" class="btn btn--ghost btn--sm">← Back</a>
+    <h1>✏️ Edit Company Profile</h1>
+    <p>Update your business details. Changes go live immediately.</p>
+  </div>
+  {% include 'company/_profile_form.html' %}
+</div>
+{% endblock %}

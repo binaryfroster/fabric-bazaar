@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Track Your Order{% endblock %}
+
+{% block extra_css %}
+<style>
+.track-search-page {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #F7F4F0 0%, #EAF2EC 100%);
+  padding: 2rem 1rem;
+}
+.track-search-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 3rem 2.5rem;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 8px 48px rgba(44,74,62,.10);
+  text-align: center;
+  animation: slideUp .4s ease both;
+}
+@keyframes slideUp { from { opacity:0; transform:translateY(20px); } }
+.track-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+.track-search-card h1 { font-size: 1.75rem; font-weight: 800; color: #2C4A3E; margin-bottom: .4rem; }
+.track-search-card p  { color: #888; font-size: .92rem; margin-bottom: 2rem; }
+.track-input-group {
+  display: flex; gap: .6rem;
+  margin-bottom: 1.25rem;
+}
+.track-input {
+  flex: 1; padding: .85rem 1.1rem;
+  border: 2px solid #E5E7EB; border-radius: 12px;
+  font-size: 1rem; font-family: inherit;
+  transition: border-color .2s;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.track-input:focus { outline: none; border-color: #2C4A3E; }
+.track-input::placeholder { text-transform: none; letter-spacing: 0; }
+.track-examples {
+  font-size: .78rem;
+  color: #aaa;
+  margin-top: 1.5rem;
+}
+.track-examples strong { color: #2C4A3E; font-family: monospace; }
+.track-features {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: .75rem; margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #F0EDE8;
+}
+.track-feature { text-align: center; }
+.track-feature__icon { font-size: 1.4rem; margin-bottom: .3rem; }
+.track-feature__text { font-size: .74rem; color: #888; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="track-search-page">
+  <div class="track-search-card">
+    <div class="track-icon">📦</div>
+    <h1>Track Your Order</h1>
+    <p>Enter your order number to see real-time shipping updates</p>
+
+    <form action="{{ url_for('tracking.track_search') }}" method="GET">
+      <div class="track-input-group">
+        <input type="text" name="q" class="track-input"
+               placeholder="e.g. DW-1234567890-AB12"
+               value="{{ request.args.get('q','') }}"
+               autofocus required>
+        <button type="submit" class="btn btn--primary" style="padding:.85rem 1.4rem;border-radius:12px;">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+    </form>
+
+    <div class="track-examples">
+      Your order number is in your confirmation email — it starts with <strong>DW-</strong>
+    </div>
+
+    <div class="track-features">
+      <div class="track-feature">
+        <div class="track-feature__icon">🔄</div>
+        <div class="track-feature__text">Real-time updates</div>
+      </div>
+      <div class="track-feature">
+        <div class="track-feature__icon">📍</div>
+        <div class="track-feature__text">Location tracking</div>
+      </div>
+      <div class="track-feature">
+        <div class="track-feature__icon">🔔</div>
+        <div class="track-feature__text">Delivery alerts</div>
+      </div>
+    </div>
+
+    {% if current_user.is_authenticated and current_user.is_customer %}
+    <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #F0EDE8;">
+      <a href="{{ url_for('buyer.orders') }}" class="btn btn--outline btn--sm">
+        <i class="fas fa-list"></i> View All My Orders
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

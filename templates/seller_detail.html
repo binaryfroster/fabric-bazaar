@@ -1,0 +1,458 @@
+{% extends 'base.html' %}
+{% block title %}{{ comp.name }} — FabricBazaar{% endblock %}
+{% block extra_css %}
+<style>
+/* ── Seller Detail Page ── */
+.seller-hero {
+  height: 240px;
+  background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.seller-hero img {
+  width: 100%; height: 100%;
+  object-fit: cover; opacity: .42;
+  transition: transform 6s ease;
+}
+.seller-hero:hover img { transform: scale(1.04); }
+.seller-hero__overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,.55));
+}
+
+/* Profile bar */
+.seller-profile {
+  background: var(--bg-card);
+  border-bottom: 2px solid var(--border-lt);
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  position: relative; z-index: 2;
+}
+.seller-profile__inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1.5rem;
+  align-items: flex-end;
+  padding: 0 0 1.5rem;
+}
+.seller-logo {
+  width: 100px; height: 100px;
+  border-radius: 20px;
+  border: 4px solid var(--white);
+  background: var(--white);
+  overflow: hidden;
+  margin-top: -50px;
+  box-shadow: var(--shadow-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.2rem; font-weight: 800; color: var(--primary);
+  flex-shrink: 0;
+}
+.seller-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+.seller-info h1 {
+  font-size: 1.5rem; font-weight: 800;
+  color: var(--text-dark);
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+  margin-bottom: .2rem;
+}
+.seller-info .tagline {
+  font-size: .88rem; color: var(--text-muted);
+  margin-top: .2rem; line-height: 1.5;
+}
+.seller-meta {
+  display: flex; flex-wrap: wrap; gap: .5rem;
+  margin-top: .65rem;
+}
+.seller-meta span {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .75rem; font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-alt);
+  border: 1px solid var(--border-lt);
+  border-radius: 20px; padding: .25rem .7rem;
+}
+.seller-meta i { color: var(--primary); font-size: .7rem; }
+
+.seller-actions {
+  display: flex; flex-direction: column;
+  gap: .5rem; align-items: flex-end;
+  flex-shrink: 0;
+}
+
+/* Seller body layout */
+.seller-body {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 2rem;
+  padding: 2rem 0 3rem;
+  align-items: start;
+}
+
+/* Review cards */
+.review-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-lt);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: .875rem;
+  transition: box-shadow var(--t);
+}
+.review-card:hover { box-shadow: var(--shadow-sm); }
+.review-card__header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: .5rem;
+  margin-bottom: .6rem;
+}
+.review-card__reviewer { font-weight: 700; font-size: .875rem; color: var(--text-dark); }
+.review-card__date { font-size: .72rem; color: var(--text-muted); white-space: nowrap; }
+.review-card__title { font-weight: 600; font-size: .875rem; margin-bottom: .3rem; color: var(--text-dark); }
+.review-card__text { font-size: .83rem; color: var(--text-muted); line-height: 1.65; }
+
+/* Rating bars in sidebar */
+.rating-bar { display: flex; align-items: center; gap: .6rem; margin-bottom: .4rem; }
+.rating-bar__label { font-size: .75rem; color: var(--text-muted); width: 20px; text-align: right; flex-shrink: 0; }
+.rating-bar__track { flex: 1; height: 8px; background: var(--bg-alt); border-radius: 4px; overflow: hidden; }
+.rating-bar__fill { height: 100%; background: #F59E0B; border-radius: 4px; transition: width .6s ease; }
+.rating-bar__count { font-size: .72rem; color: var(--text-muted); width: 24px; flex-shrink: 0; }
+
+.big-score { font-size: 3.5rem; font-weight: 900; color: var(--secondary); line-height: 1; }
+
+/* Seller reply */
+.review-seller-reply {
+  background: var(--bg-alt);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: .65rem .875rem;
+  font-size: .82rem; color: var(--text-muted);
+  margin-top: .75rem;
+}
+.review-seller-reply__label {
+  font-weight: 700; color: var(--primary);
+  font-size: .75rem; margin-bottom: .2rem;
+}
+.review-reply-form { display: none; margin-top: .5rem; }
+.review-reply-form textarea {
+  width: 100%; font-size: .83rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: .5rem .75rem; background: var(--white); resize: vertical;
+}
+
+/* Contact & stats sidebar cards */
+.sidebar-detail-card {
+  background: var(--white);
+  border: 1px solid var(--border-lt);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1rem;
+}
+.sidebar-detail-card__title {
+  font-size: .7rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  padding-bottom: .65rem;
+  border-bottom: 1px solid var(--border-lt);
+}
+.sidebar-contact-link {
+  display: flex; align-items: center; gap: .65rem;
+  font-size: .875rem; font-weight: 600;
+  color: var(--secondary);
+  padding: .45rem 0;
+  transition: color var(--t);
+  text-decoration: none;
+}
+.sidebar-contact-link:hover { color: var(--primary); }
+.sidebar-contact-link i { color: var(--primary); width: 16px; text-align: center; }
+.stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .45rem 0;
+  border-bottom: 1px solid var(--border-lt);
+  font-size: .85rem;
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-row__label { color: var(--text-muted); }
+.stat-row__value { font-weight: 700; color: var(--text-dark); }
+
+/* Section headers */
+.section-heading {
+  font-size: 1.1rem; font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 1.1rem;
+  display: flex; align-items: center; gap: .5rem;
+}
+.section-heading::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: var(--border-lt);
+  margin-left: .5rem;
+}
+
+@media(max-width:960px) {
+  .seller-body { grid-template-columns: 1fr; }
+  .seller-profile__inner { grid-template-columns: auto 1fr; }
+  .seller-actions { flex-direction: row; align-items: center; }
+}
+@media(max-width:600px) {
+  .seller-hero { height: 160px; }
+  .seller-logo { width: 76px; height: 76px; font-size: 1.5rem; margin-top: -38px; }
+  .seller-info h1 { font-size: 1.2rem; }
+  .seller-profile__inner { gap: .875rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if current_user.is_authenticated and current_user.is_customer %}
+<a href="{{ url_for('messages.new_thread') }}?to={{ comp.user_id }}&company={{ comp.id }}"
+   class="float-chat-btn" aria-label="Chat with seller">
+  <span class="float-chat-btn__dot"></span>
+  <i class="fas fa-comment-dots"></i>
+  Chat with Seller
+</a>
+{% endif %}
+
+<!-- Hero Banner -->
+<div class="seller-hero">
+  {% if comp.banner %}
+  <img src="{{ media_url(comp.banner, 'companies') }}" alt="{{ comp.name }} banner" loading="lazy">
+  {% endif %}
+  <div class="seller-hero__overlay"></div>
+</div>
+
+<!-- Profile Bar -->
+<div class="seller-profile">
+  <div class="container">
+    <div class="seller-profile__inner">
+      <!-- Logo -->
+      <div class="seller-logo">
+        {% if comp.logo %}
+        <img src="{{ media_url(comp.logo, 'companies') }}" alt="{{ comp.name }}" loading="lazy">
+        {% else %}{{ comp.name[0] }}{% endif %}
+      </div>
+
+      <!-- Info -->
+      <div class="seller-info">
+        <h1>
+          {{ comp.name }}
+          {% if comp.is_verified %}<span class="badge badge--verified" style="font-size:.72rem;">✓ Verified</span>{% endif %}
+          {% if comp.is_featured %}<span class="badge badge--warn" style="font-size:.68rem;">⭐ Featured</span>{% endif %}
+        </h1>
+        {% if comp.tagline %}<p class="tagline">{{ comp.tagline }}</p>{% endif %}
+        <div class="seller-meta">
+          {% if comp.city %}<span><i class="fas fa-map-marker-alt"></i>{{ comp.city }}{% if comp.state %}, {{ comp.state }}{% endif %}</span>{% endif %}
+          {% if comp.business_type %}<span><i class="fas fa-industry"></i>{{ comp.business_type }}</span>{% endif %}
+          {% if comp.established_year %}<span><i class="fas fa-calendar-alt"></i>Est. {{ comp.established_year }}</span>{% endif %}
+          <span><i class="fas fa-boxes"></i>{{ comp.product_count }} Products</span>
+        </div>
+        <!-- Rating inline (computed in route, passed as context) -->
+        {% if seller_avg and seller_total %}
+        <div style="display:flex;align-items:center;gap:.5rem;margin-top:.5rem;">
+          <span style="color:#F59E0B;">{% for i in range(1,6) %}{% if i <= seller_avg|int %}★{% else %}☆{% endif %}{% endfor %}</span>
+          <span style="font-weight:700;font-size:.92rem;">{{ "%.1f"|format(seller_avg) }}</span>
+          <span style="font-size:.78rem;color:var(--text-muted);">({{ seller_total }} review{{ 's' if seller_total != 1 }})</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Actions -->
+      <div class="seller-actions">
+        {% if comp.whatsapp %}
+        <a href="https://wa.me/91{{ comp.whatsapp }}" class="btn btn--whatsapp btn--sm" target="_blank">
+          <i class="fab fa-whatsapp"></i> WhatsApp
+        </a>
+        {% endif %}
+        {% if current_user.is_authenticated and current_user.is_customer %}
+        <a href="{{ url_for('messages.new_thread') }}?to={{ comp.user_id }}&company={{ comp.id }}" class="btn btn--outline btn--sm">
+          <i class="fas fa-comment"></i> Message
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="seller-body">
+
+    <!-- LEFT: Products + Reviews -->
+    <div>
+      <!-- About -->
+      {% if comp.description %}
+      <div class="chart-card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.75rem;">About {{ comp.name }}</h3>
+        <p style="font-size:.875rem;color:var(--text);line-height:1.75;">{{ comp.description }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Products -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;">
+        <h2 class="section-heading">Products <span style="font-size:.78rem;font-weight:600;color:var(--text-muted);background:var(--bg-alt);border-radius:20px;padding:.15rem .55rem;margin-left:.25rem;">{{ products.total }}</span></h2>
+      </div>
+
+      {% if products.items %}
+      <div class="product-grid" style="margin-bottom:2rem;">
+        {% for product in products.items %}{% include '_product_card.html' %}{% endfor %}
+      </div>
+
+      <!-- Pagination -->
+      {% if products.pages > 1 %}
+      <div class="pagination" style="margin-bottom:2rem;">
+        {% if products.has_prev %}
+        <a href="?page={{ products.prev_num }}" class="btn btn--ghost btn--sm">← Prev</a>
+        {% endif %}
+        <span style="font-size:.85rem;color:var(--text-muted);">Page {{ products.page }} of {{ products.pages }}</span>
+        {% if products.has_next %}
+        <a href="?page={{ products.next_num }}" class="btn btn--ghost btn--sm">Next →</a>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="empty-state"><div style="font-size:2.5rem;">📦</div><h3>No products yet</h3></div>
+      {% endif %}
+
+      <!-- Reviews -->
+      {% if seller_ratings %}
+      <div id="reviews">
+        <h2 style="font-size:1.1rem;font-weight:800;margin-bottom:1.1rem;">Customer Reviews</h2>
+        {% for r in seller_ratings %}
+        <div class="review-card">
+          <div class="review-card__header">
+            <div>
+              <div class="review-card__reviewer">{{ r.user.first_name }} {{ r.user.last_name[0] }}.</div>
+              <div style="color:#F59E0B;font-size:.8rem;">{% for i in range(1,6) %}{% if i <= r.rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+            </div>
+            <div class="review-card__date">{{ r.created_at.strftime('%d %b %Y') }}</div>
+          </div>
+          {% if r.title %}<div class="review-card__title">{{ r.title }}</div>{% endif %}
+          {% if r.review %}<div class="review-card__text">{{ r.review }}</div>{% endif %}
+          <!-- Seller reply -->
+          {% if r.seller_reply %}
+          <div class="review-seller-reply" style="margin-top:.6rem;">
+            <div class="review-seller-reply__label">📢 {{ comp.name }} replied:</div>
+            {{ r.seller_reply }}
+          </div>
+          {% elif current_user.is_authenticated and current_user.is_company and current_user.company and current_user.company.id == comp.id %}
+          <button onclick="toggleReplyForm({{ r.id }})" class="btn btn--ghost btn--xs" style="margin-top:.5rem;">Reply</button>
+          <div id="replyForm{{ r.id }}" class="review-reply-form">
+            <form method="POST" action="{{ url_for('ratings.reply_seller_rating', rid=r.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <textarea name="reply" rows="2" placeholder="Write your reply…" required></textarea>
+              <button type="submit" class="btn btn--primary btn--sm" style="margin-top:.4rem;">Post Reply</button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Rate this seller -->
+      {% if current_user.is_authenticated and current_user.is_customer %}
+      <div class="chart-card" id="rate-seller" style="margin-top:1.5rem;">
+        <h3 style="font-size:.95rem;font-weight:700;margin-bottom:.875rem;">Rate this Seller</h3>
+        <form method="POST" action="{{ url_for('ratings.rate_seller', company_id=comp.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="form-group">
+            <label class="form-group label">Rating *</label>
+            <select name="rating" class="form-control" required>
+              <option value="">Select...</option>
+              {% for v,l in [(5,'⭐⭐⭐⭐⭐ Excellent'),(4,'⭐⭐⭐⭐ Good'),(3,'⭐⭐⭐ Average'),(2,'⭐⭐ Poor'),(1,'⭐ Very Poor')] %}
+              <option value="{{ v }}">{{ l }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" name="title" class="form-control" placeholder="Summary of your experience">
+          </div>
+          <div class="form-group">
+            <label>Review</label>
+            <textarea name="review" class="form-control" rows="3" placeholder="Tell others about this seller…"></textarea>
+          </div>
+          <button type="submit" class="btn btn--primary btn--sm">Submit Review</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: Sidebar -->
+    <div>
+      <!-- Rating Summary -->
+      {% if seller_avg and seller_total %}
+      <div class="sidebar-detail-card" style="text-align:center;">
+        <div class="sidebar-detail-card__title">Seller Rating</div>
+        <div class="big-score">{{ "%.1f"|format(seller_avg) }}</div>
+        <div style="color:#F59E0B;font-size:1.4rem;margin:.3rem 0;">{% for i in range(1,6) %}{% if i <= seller_avg|int %}★{% else %}☆{% endif %}{% endfor %}</div>
+        <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:1.1rem;">{{ seller_total }} review{{ 's' if seller_total != 1 }}</div>
+        <div>
+          {% for star in [5,4,3,2,1] %}
+          {% set cnt = seller_ratings | selectattr('rating','eq',star) | list | length %}
+          {% set pct = (cnt / seller_total * 100) | int if seller_total else 0 %}
+          <div class="rating-bar">
+            <span class="rating-bar__label">{{ star }}</span>
+            <div class="rating-bar__track"><div class="rating-bar__fill" style="width:{{ pct }}%;"></div></div>
+            <span class="rating-bar__count">{{ cnt }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Contact Card -->
+      <div class="sidebar-detail-card">
+        <div class="sidebar-detail-card__title">Contact</div>
+        {% if comp.phone %}
+        <a href="tel:{{ comp.phone }}" class="sidebar-contact-link">
+          <i class="fas fa-phone"></i> {{ comp.phone }}
+        </a>
+        {% endif %}
+        {% if comp.email %}
+        <a href="mailto:{{ comp.email }}" class="sidebar-contact-link" style="font-size:.82rem;word-break:break-all;">
+          <i class="fas fa-envelope"></i> {{ comp.email }}
+        </a>
+        {% endif %}
+        {% if comp.city %}
+        <div class="sidebar-contact-link" style="cursor:default;">
+          <i class="fas fa-map-marker-alt"></i>
+          <span style="font-size:.82rem;font-weight:500;color:var(--text-muted);">{{ comp.city }}{% if comp.state %}, {{ comp.state }}{% endif %}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Stats Card -->
+      <div class="sidebar-detail-card">
+        <div class="sidebar-detail-card__title">Seller Stats</div>
+        <div class="stat-row">
+          <span class="stat-row__label">Total Products</span>
+          <strong class="stat-row__value">{{ comp.product_count }}</strong>
+        </div>
+        {% if comp.established_year %}
+        <div class="stat-row">
+          <span class="stat-row__label">Established</span>
+          <strong class="stat-row__value">{{ comp.established_year }}</strong>
+        </div>
+        {% endif %}
+        {% if comp.business_type %}
+        <div class="stat-row">
+          <span class="stat-row__label">Business Type</span>
+          <strong class="stat-row__value">{{ comp.business_type }}</strong>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- CTA card for non-logged-in users -->
+      {% if not current_user.is_authenticated %}
+      <div class="sidebar-detail-card" style="background:var(--primary-light);border-color:rgba(200,119,58,.2);">
+        <div style="font-size:.85rem;font-weight:700;color:var(--primary-dark);margin-bottom:.4rem;">
+          💬 Contact this Seller
+        </div>
+        <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:.75rem;">Login to message or WhatsApp this seller directly.</p>
+        <a href="{{ url_for('auth.login') }}" class="btn btn--primary btn--sm" style="width:100%;text-align:center;">Login to Contact</a>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

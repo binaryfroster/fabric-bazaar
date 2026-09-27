@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% block title %}{{ comp.name }} — Profile{% endblock %}
+{% block extra_css %}
+<style>
+/* ── Banner & header ───────────────────────────────────────────── */
+.cp-banner {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(135deg, var(--secondary) 0%, #4a7c6a 100%);
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  position: relative;
+}
+.cp-header {
+  background: var(--white);
+  border: 1px solid var(--border-lt);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 0 2rem 1.75rem;
+  margin-bottom: 1.75rem;
+  position: relative;
+}
+.cp-logo {
+  width: 88px; height: 88px;
+  border-radius: 16px;
+  border: 3px solid var(--white);
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  overflow: hidden;
+  background: var(--white);
+  position: absolute;
+  top: -44px;
+  left: 2rem;
+}
+.cp-logo img { width: 100%; height: 100%; object-fit: cover; }
+.cp-logo-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; font-weight: 800;
+  background: var(--secondary); color: #fff;
+}
+.cp-header__body {
+  padding-top: 56px;
+  display: flex; align-items: flex-start;
+  justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+}
+.cp-name {
+  font-size: 1.4rem; font-weight: 800; color: var(--secondary);
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+}
+.cp-tagline { font-size: .875rem; color: var(--text-muted); margin-top: .2rem; }
+.cp-meta {
+  display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .75rem;
+}
+.cp-meta-pill {
+  display: inline-flex; align-items: center; gap: .35rem;
+  background: var(--bg-alt); border: 1px solid var(--border-lt);
+  border-radius: 20px; padding: .3rem .75rem;
+  font-size: .75rem; color: var(--text-muted);
+}
+.cp-meta-pill i { color: var(--primary); font-size: .7rem; }
+.cp-actions { display: flex; gap: .625rem; flex-shrink: 0; }
+
+/* ── Grid layout ────────────────────────────────────────────────── */
+.cp-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .cp-grid { grid-template-columns: 1fr; }
+  .cp-banner { height: 140px; }
+}
+
+/* ── Section cards ──────────────────────────────────────────────── */
+.cp-card {
+  background: var(--white);
+  border: 1px solid var(--border-lt);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+.cp-card:last-child { margin-bottom: 0; }
+.cp-card__header {
+  padding: .875rem 1.25rem;
+  border-bottom: 1px solid var(--border-lt);
+  background: var(--bg-alt);
+}
+.cp-card__header h3 {
+  font-size: .78rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .09em;
+  color: var(--text-muted); margin: 0;
+}
+.cp-card__body { padding: 1.25rem; }
+.cp-card__body p {
+  font-size: .875rem; color: var(--text-muted);
+  line-height: 1.75; margin: 0;
+}
+
+/* ── Contact rows ───────────────────────────────────────────────── */
+.cp-contact-row {
+  display: flex; align-items: center; gap: .875rem;
+  padding: .5rem 0; border-bottom: 1px solid var(--border-lt);
+  font-size: .85rem;
+}
+.cp-contact-row:last-child { border-bottom: none; }
+.cp-contact-row__icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--primary-light);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary); font-size: .8rem; flex-shrink: 0;
+}
+.cp-contact-row__label { font-size: .72rem; color: var(--text-light); margin-bottom: .1rem; }
+.cp-contact-row__val { color: var(--text-dark); font-weight: 600; }
+.cp-contact-row__val a { color: var(--primary); text-decoration: none; }
+
+/* ── Stats row ──────────────────────────────────────────────────── */
+.cp-stats {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: var(--border-lt);
+  border-radius: var(--radius-sm); overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+.cp-stat {
+  background: var(--white); padding: 1rem;
+  text-align: center;
+}
+.cp-stat__num { font-size: 1.3rem; font-weight: 800; color: var(--secondary); }
+.cp-stat__label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; }
+
+/* ── Verified banner ────────────────────────────────────────────── */
+.cp-verified-banner {
+  background: #F0FDF4; border: 1px solid #BBF7D0;
+  border-radius: var(--radius-sm); padding: .875rem 1.25rem;
+  display: flex; align-items: center; gap: .75rem;
+  font-size: .83rem; color: #166534; margin-bottom: 1.25rem;
+}
+.cp-pending-banner {
+  background: #FFFBEB; border: 1px solid #FDE68A;
+  border-radius: var(--radius-sm); padding: .875rem 1.25rem;
+  font-size: .83rem; color: #92400E; margin-bottom: 1.25rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:980px;padding:2rem 1rem 3rem;">
+
+  <!-- Verification banner -->
+  {% if comp.is_verified %}
+  <div class="cp-verified-banner">
+    <i class="fas fa-check-circle" style="font-size:1.1rem;color:#10B981;flex-shrink:0;"></i>
+    <div><strong>Verified Seller</strong> — Your profile is active and visible to buyers on the marketplace.</div>
+  </div>
+  {% else %}
+  <div class="cp-pending-banner">
+    <i class="fas fa-clock"></i>
+    <strong>Pending Verification</strong> — Your profile is under review. Products will be visible once verified.
+  </div>
+  {% endif %}
+
+  <!-- Banner + Header -->
+  <div style="border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow);">
+    {% if comp.banner %}
+    <div class="cp-banner" style="background-image:url('{{ media_url(comp.banner, 'companies') }}');"></div>
+    {% else %}
+    <div class="cp-banner"></div>
+    {% endif %}
+
+    <div class="cp-header">
+      <!-- Logo -->
+      <div class="cp-logo">
+        {% if comp.logo %}
+        <img src="{{ media_url(comp.logo, 'companies') }}" alt="{{ comp.name }}" loading="lazy">
+        {% else %}
+        <div class="cp-logo-placeholder">{{ comp.name[0] }}</div>
+        {% endif %}
+      </div>
+
+      <div class="cp-header__body">
+        <div>
+          <div class="cp-name">
+            {{ comp.name }}
+            {% if comp.is_verified %}
+            <span class="badge badge--success" style="font-size:.68rem;">✓ Verified</span>
+            {% else %}
+            <span class="badge badge--muted" style="font-size:.68rem;">Pending</span>
+            {% endif %}
+          </div>
+          {% if comp.tagline %}<div class="cp-tagline">{{ comp.tagline }}</div>{% endif %}
+          <div class="cp-meta">
+            {% if comp.city %}<span class="cp-meta-pill"><i class="fas fa-map-marker-alt"></i>{{ comp.city }}{% if comp.state %}, {{ comp.state }}{% endif %}</span>{% endif %}
+            {% if comp.business_type %}<span class="cp-meta-pill"><i class="fas fa-industry"></i>{{ comp.business_type }}</span>{% endif %}
+            {% if comp.established_year %}<span class="cp-meta-pill"><i class="fas fa-calendar"></i>Est. {{ comp.established_year }}</span>{% endif %}
+            <span class="cp-meta-pill"><i class="fas fa-boxes"></i>{{ comp.product_count }} Products</span>
+          </div>
+        </div>
+        <div class="cp-actions">
+          <a href="{{ url_for('company.edit_profile') }}" class="btn btn--outline btn--sm">
+            <i class="fas fa-edit"></i> Edit Profile
+          </a>
+          <a href="{{ url_for('company.products') }}" class="btn btn--primary btn--sm">
+            <i class="fas fa-boxes"></i> My Products
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two-column body -->
+  <div class="cp-grid">
+
+    <!-- LEFT: About + Business details -->
+    <div>
+      {% if comp.description %}
+      <div class="cp-card">
+        <div class="cp-card__header"><h3>About</h3></div>
+        <div class="cp-card__body"><p>{{ comp.description }}</p></div>
+      </div>
+      {% endif %}
+
+      {% if comp.gst_number or comp.pan_number %}
+      <div class="cp-card">
+        <div class="cp-card__header"><h3>Business Details</h3></div>
+        <div class="cp-card__body">
+          {% if comp.gst_number %}
+          <div class="cp-contact-row">
+            <div class="cp-contact-row__icon"><i class="fas fa-file-invoice"></i></div>
+            <div>
+              <div class="cp-contact-row__label">GST Number</div>
+              <div class="cp-contact-row__val">{{ comp.gst_number }}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% if comp.pan_number %}
+          <div class="cp-contact-row">
+            <div class="cp-contact-row__icon"><i class="fas fa-id-card"></i></div>
+            <div>
+              <div class="cp-contact-row__label">PAN Number</div>
+              <div class="cp-contact-row__val">{{ comp.pan_number }}</div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: Stats + Contact + Address -->
+    <div>
+      <!-- Stats -->
+      <div class="cp-stats">
+        <div class="cp-stat">
+          <div class="cp-stat__num">{{ comp.product_count }}</div>
+          <div class="cp-stat__label">Products</div>
+        </div>
+        <div class="cp-stat">
+          <div class="cp-stat__num">{{ comp.is_verified | int }}</div>
+          <div class="cp-stat__label">{{ 'Verified' if comp.is_verified else 'Pending' }}</div>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      {% if comp.phone or comp.email or comp.website or comp.whatsapp %}
+      <div class="cp-card">
+        <div class="cp-card__header"><h3>Contact Info</h3></div>
+        <div class="cp-card__body">
+          {% if comp.phone %}
+          <div class="cp-contact-row">
+            <div class="cp-contact-row__icon"><i class="fas fa-phone"></i></div>
+            <div>
+              <div class="cp-contact-row__label">Phone</div>
+              <div class="cp-contact-row__val"><a href="tel:{{ comp.phone }}">{{ comp.phone }}</a></div>
+            </div>
+          </div>
+          {% endif %}
+          {% if comp.whatsapp %}
+          <div class="cp-contact-row">
+            <div class="cp-contact-row__icon"><i class="fab fa-whatsapp"></i></div>
+            <div>
+              <div class="cp-contact-row__label">WhatsApp</div>
+              <div class="cp-contact-row__val"><a href="https://wa.me/{{ comp.whatsapp }}">{{ comp.whatsapp }}</a></div>
+            </div>
+          </div>
+          {% endif %}
+          {% if comp.email %}
+          <div class="cp-contact-row">
+            <div class="cp-contact-row__icon"><i class="fas fa-envelope"></i></div>
+            <div>
+              <div class="cp-contact-row__label">Email</div>
+              <div class="cp-contact-row__val"><a href="mailto:{{ comp.email }}">{{ comp.email }}</a></div>
+            </div>
+          </div>
+          {% endif %}
+          {% if comp.website %}
+          <div class="cp-contact-row">
+            <div class="cp-contact-row__icon"><i class="fas fa-globe"></i></div>
+            <div>
+              <div class="cp-contact-row__label">Website</div>
+              <div class="cp-contact-row__val"><a href="{{ comp.website }}" target="_blank">{{ comp.website }}</a></div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Address -->
+      {% if comp.full_address %}
+      <div class="cp-card">
+        <div class="cp-card__header"><h3>Address</h3></div>
+        <div class="cp-card__body">
+          <div style="display:flex;gap:.75rem;align-items:flex-start;">
+            <i class="fas fa-map-marker-alt" style="color:var(--primary);margin-top:.15rem;flex-shrink:0;"></i>
+            <p>{{ comp.full_address }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Add Product — Admin{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+  <aside class="admin-sidebar">{% include 'admin/_sidebar.html' %}</aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Add New Product</h1>
+      <a href="{{ url_for('admin.products') }}" class="btn btn--outline btn--sm">← Back to Products</a>
+    </div>
+
+    <div class="admin-panel">
+      <form action="{{ url_for('admin.add_product') }}" method="post" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        {% include 'admin/_product_form.html' %}
+        <div class="form-actions">
+          {{ form.submit(class='btn btn--primary') }}
+          <a href="{{ url_for('admin.products') }}" class="btn btn--ghost">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Setup Company Profile{% endblock %}
+{% block content %}
+<div class="container" style="max-width:800px;padding:2rem 1rem;">
+  <div class="page-header">
+    <h1>🏭 Setup Your Company Profile</h1>
+    <p>Tell buyers about your business. You can edit all details any time after saving.</p>
+  </div>
+  {% include 'company/_profile_form.html' %}
+</div>
+{% endblock %}

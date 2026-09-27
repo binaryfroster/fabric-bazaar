@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block title %}{{ comp.name }} — Seller Dashboard{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'company/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+
+    <div class="dashboard__topbar">
+      <div>
+        <h1><span style="color:var(--primary);">👋</span> Welcome, {{ current_user.first_name }}!</h1>
+        <p style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem;">{{ comp.name }} — Seller Dashboard</p>
+      </div>
+      <a href="{{ url_for('main.seller_detail', slug=comp.slug) }}" class="btn btn--outline btn--sm" target="_blank">
+        <i class="fas fa-eye"></i> View Public Store
+      </a>
+    </div>
+
+    {# ── Pending Approval Banner ── #}
+    {% if not comp.is_verified %}
+    <div class="approval-pending-banner">
+      <div class="approval-pending-banner__icon">⏳</div>
+      <div class="approval-pending-banner__text">
+        <strong>Your account is awaiting admin approval</strong>
+        <p>
+          Your company profile and products are ready, but will <strong>not be visible</strong>
+          to buyers until an admin approves your account. This usually takes 1–2 business days.
+          You can still add and edit products in the meantime.
+        </p>
+      </div>
+    </div>
+
+    {# ── Active / Verified ── #}
+    {% elif not comp.is_active %}
+    <div class="alert alert--danger">
+      🚫 <strong>Account Suspended</strong> — Your company has been suspended by an admin.
+      Please contact support for assistance.
+    </div>
+
+    {% else %}
+    <div class="alert alert--success">
+      ✅ <strong>Your store is live!</strong> Your products are visible to buyers on the marketplace.
+      <a href="{{ url_for('main.seller_detail', slug=comp.slug) }}" target="_blank" style="font-weight:700;">
+        View your public store →
+      </a>
+    </div>
+    {% endif %}
+
+    {# ── Stats ── #}
+    <div class="stats-grid">
+      <div class="stat-card stat-card--success">
+        <div class="stat-card__label"><i class="fas fa-boxes" style="color:var(--success);margin-right:.35rem;"></i>Total Products</div>
+        <div class="stat-card__num">{{ stats.total_products }}</div>
+        <div class="stat-card__sub">All listed items</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label"><i class="fas fa-check-circle" style="color:var(--primary);margin-right:.35rem;"></i>Active Listings</div>
+        <div class="stat-card__num">{{ stats.active_products }}</div>
+        <div class="stat-card__sub">Visible to buyers</div>
+      </div>
+      <div class="stat-card stat-card--warn">
+        <div class="stat-card__label"><i class="fas fa-exclamation-triangle" style="color:var(--warning);margin-right:.35rem;"></i>Out of Stock</div>
+        <div class="stat-card__num">{{ stats.out_of_stock }}</div>
+        <div class="stat-card__sub">Needs restocking</div>
+      </div>
+    </div>
+
+    {# ── Quick Actions ── #}
+    <div class="quick-actions">
+      <a href="{{ url_for('company.add_product') }}" class="btn btn--primary">
+        <i class="fas fa-plus"></i> Add Product
+      </a>
+      <a href="{{ url_for('company.edit_profile') }}" class="btn btn--outline">
+        <i class="fas fa-edit"></i> Edit Profile
+      </a>
+      <a href="{{ url_for('company.orders') }}" class="btn btn--outline">
+        <i class="fas fa-receipt"></i> Orders
+      </a>
+      <a href="{{ url_for('analytics.company_analytics') }}" class="btn btn--outline">
+        <i class="fas fa-chart-line"></i> Analytics
+      </a>
+    </div>
+
+    {# ── Recent Products ── #}
+    {% if recent_products %}
+    <div class="dashboard-table-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <h3>Recent Products</h3>
+        <a href="{{ url_for('company.products') }}" class="section__link">View All →</a>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Listed</th>
+            <th>Visible to Buyers</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in recent_products %}
+          <tr>
+            <td><strong>{{ p.name }}</strong></td>
+            <td>{{ p.fabric_type or '—' }}</td>
+            <td>{{ p.display_price | inr }}</td>
+            <td {% if p.stock == 0 %}style="color:var(--danger);font-weight:700;"{% endif %}>
+              {{ p.stock }}
+            </td>
+            <td>
+              <span class="badge badge--{{ 'success' if p.is_active else 'muted' }}">
+                {{ 'Yes' if p.is_active else 'No' }}
+              </span>
+            </td>
+            <td>
+              {% if not comp.is_verified %}
+                <span class="badge badge--warn">Pending approval</span>
+              {% elif p.is_active %}
+                <span class="badge badge--success">✓ Live</span>
+              {% else %}
+                <span class="badge badge--muted">Unlisted</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{{ url_for('company.edit_product', pid=p.id) }}"
+                 class="btn btn--xs btn--outline">Edit</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {# ── Recent Orders ── #}
+    {% if recent_orders %}
+    <div class="dashboard-table-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <h3>Recent Orders</h3>
+        <a href="{{ url_for('company.orders') }}" class="section__link">View All →</a>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Order #</th><th>Customer</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for o in recent_orders %}
+          <tr>
+            <td><strong>{{ o.order_number }}</strong></td>
+            <td>{{ o.full_name }}</td>
+            <td>{{ o.total | inr }}</td>
+            <td>
+              <span class="badge badge--{{
+                'success' if o.status=='delivered' else
+                'info'    if o.status in ['shipped','confirmed'] else 'muted' }}">
+                {{ o.status.title() }}
+              </span>
+            </td>
+            <td>{{ o.created_at.strftime('%d %b %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

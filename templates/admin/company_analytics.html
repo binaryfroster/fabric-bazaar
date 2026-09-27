@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% set comp = summary.comp %}
+{% block title %}{{ comp.name }} — Deep Analytics{% endblock %}
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+
+    <div class="dashboard__topbar">
+      <a href="{{ url_for('analytics.admin_analytics') }}" class="btn btn--ghost btn--sm">← Market Analytics</a>
+      <a href="{{ url_for('admin.company_detail', cid=comp.id) }}" class="btn btn--ghost btn--sm">Company Details</a>
+      <h1>{{ comp.name }} — Deep Dive</h1>
+      <div class="period-tabs">
+        {% for p, label in [('7','7 days'),('30','30 days'),('90','3 months'),('365','1 year')] %}
+        <a href="?period={{ p }}"
+           class="btn btn--sm btn--{{ 'primary' if period==p else 'outline' }}">{{ label }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Company Status Banner -->
+    <div class="company-analytics-header">
+      <div class="company-analytics-header__left">
+        {% if comp.logo %}
+        <img src="{{ media_url(comp.logo, 'companies') }}"
+             class="company-analytics-logo" loading="lazy">
+        {% endif %}
+        <div>
+          <h2>{{ comp.name }}</h2>
+          <div class="company-meta">
+            {% if comp.city %}<span><i class="fas fa-map-marker-alt"></i> {{ comp.city }}, {{ comp.state }}</span>{% endif %}
+            {% if comp.business_type %}<span>{{ comp.business_type }}</span>{% endif %}
+            <span>Owner: <strong>{{ comp.user.full_name }}</strong></span>
+          </div>
+          <div style="margin-top:.5rem;">
+            {% if comp.is_verified %}
+              <span class="badge badge--success">✅ Verified & Live</span>
+            {% else %}
+              <span class="badge badge--warn">⏳ Pending Approval</span>
+            {% endif %}
+            {% if comp.is_featured %}<span class="badge badge--info">⭐ Featured</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="company-analytics-header__actions">
+        <a href="{{ url_for('main.seller_detail', slug=comp.slug) }}" class="btn btn--outline btn--sm" target="_blank">View Store</a>
+        <a href="{{ url_for('admin.edit_company', cid=comp.id) }}" class="btn btn--primary btn--sm">Edit Company</a>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-card--primary">
+        <div class="kpi-card__icon">💰</div>
+        <div class="kpi-card__value">{{ summary.total_revenue | inr }}</div>
+        <div class="kpi-card__label">Total Revenue</div>
+        {% if summary.rev_change is not none %}
+        <div class="kpi-card__trend {{ 'trend--up' if summary.rev_change >= 0 else 'trend--down' }}">
+          {{ '▲' if summary.rev_change >= 0 else '▼' }} {{ summary.rev_change | abs }}% vs last month
+        </div>
+        {% endif %}
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">🗓️</div>
+        <div class="kpi-card__value">{{ summary.this_month_rev | inr }}</div>
+        <div class="kpi-card__label">This Month</div>
+        <div class="kpi-card__sub">Last month: {{ summary.last_month_rev | inr }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">📦</div>
+        <div class="kpi-card__value">{{ summary.order_count }}</div>
+        <div class="kpi-card__label">Total Orders</div>
+        <div class="kpi-card__sub">{{ summary.units_sold }} units sold</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">💳</div>
+        <div class="kpi-card__value">{{ summary.avg_order | round(0) | int | inr }}</div>
+        <div class="kpi-card__label">Avg Order Value</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">👁️</div>
+        <div class="kpi-card__value">{{ summary.total_views | int }}</div>
+        <div class="kpi-card__label">Product Views</div>
+        <div class="kpi-card__sub">{{ summary.conversion }}% conversion rate</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">⭐</div>
+        <div class="kpi-card__value">{{ summary.avg_rating or '—' }}</div>
+        <div class="kpi-card__label">Avg Seller Rating</div>
+        <div class="kpi-card__sub">{{ summary.rating_count }} reviews</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">📋</div>
+        <div class="kpi-card__value">{{ summary.active_products }}</div>
+        <div class="kpi-card__label">Active Listings</div>
+      </div>
+      <div class="kpi-card {{ 'kpi-card--warn' if summary.out_of_stock > 0 }}">
+        <div class="kpi-card__icon">⚠️</div>
+        <div class="kpi-card__value">{{ summary.out_of_stock }}</div>
+        <div class="kpi-card__label">Out of Stock</div>
+      </div>
+    </div>
+
+    <!-- Revenue Trend -->
+    <div class="chart-card">
+      <div class="chart-card__header"><h3>Daily Revenue — Last {{ period }} Days</h3></div>
+      <canvas id="revenueChart" style="max-height:240px"></canvas>
+    </div>
+
+    <!-- Monthly Trend + Order Status -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-card__header"><h3>Monthly Revenue (12 months)</h3></div>
+        <canvas id="monthlyChart" style="max-height:240px"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card__header"><h3>Order Status Breakdown</h3></div>
+        <canvas id="statusChart" style="max-height:240px"></canvas>
+      </div>
+    </div>
+
+    <!-- Rating Analysis -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-card__header"><h3>Rating Distribution</h3></div>
+        {% if summary.rating_count > 0 %}
+        <canvas id="ratingChart" style="max-height:240px"></canvas>
+        {% else %}
+        <div class="empty-state" style="padding:2rem;"><p>No ratings yet</p></div>
+        {% endif %}
+      </div>
+      <div class="chart-card">
+        <div class="chart-card__header"><h3>Experience Scores</h3></div>
+        {% if summary.rating_count > 0 %}
+        <canvas id="dimensionChart" style="max-height:240px"></canvas>
+        {% else %}
+        <div class="empty-state" style="padding:2rem;"><p>No ratings yet</p></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Product Performance -->
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h3>All Products — Performance Breakdown</h3>
+        <a href="{{ url_for('admin.products') }}?company={{ company_id }}" class="section__link">Manage →</a>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Product</th><th>Price</th><th>Views</th>
+            <th>Units Sold</th><th>Revenue</th><th>Avg Review</th>
+            <th>Reviews</th><th>Stock</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in product_stats %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>
+              {% if p.image %}
+              <img src="{{ media_url(p.image, 'products') }}"
+                   width="36" height="36" style="object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:.4rem;" loading="lazy">
+              {% endif %}
+              <strong>{{ p.name }}</strong>
+            </td>
+            <td>{{ p.price | inr }}</td>
+            <td>{{ p.view_count | int }}</td>
+            <td><strong>{{ p.units_sold | int }}</strong></td>
+            <td><strong>{{ p.revenue | float | round(0) | int | inr }}</strong></td>
+            <td>
+              {% if p.avg_review > 0 %}
+                <span style="color:#F59E0B;">★</span> {{ "%.1f"|format(p.avg_review) }}
+              {% else %}—{% endif %}
+            </td>
+            <td>{{ p.review_count }}</td>
+            <td {% if p.stock == 0 %}style="color:var(--danger);font-weight:700;"{% endif %}>{{ p.stock }}</td>
+            <td>
+              <span class="badge badge--{{ 'success' if p.is_active else 'muted' }}">
+                {{ 'Live' if p.is_active else 'Hidden' }}
+              </span>
+            </td>
+            <td>
+              <a href="{{ url_for('admin.edit_product', pid=p.id) }}"
+                 class="btn btn--xs btn--outline">Edit</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--text-muted);">No products.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <!-- All Ratings -->
+    {% if all_ratings %}
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h3>All Customer Ratings ({{ all_ratings | length }})</h3>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Customer</th><th>Rating</th><th>Quality</th><th>Comm.</th><th>Delivery</th><th>Review</th><th>Verified</th><th>Date</th><th>Visible</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for r in all_ratings %}
+          <tr>
+            <td>{{ r.user.full_name }}</td>
+            <td>
+              {% for i in range(1,6) %}<span class="star {% if i <= r.rating %}star--full{% else %}star--empty{% endif %}" style="font-size:.85rem;">★</span>{% endfor %}
+              <strong>{{ r.rating }}</strong>
+            </td>
+            <td>{{ r.quality_rating or '—' }}</td>
+            <td>{{ r.communication_rating or '—' }}</td>
+            <td>{{ r.delivery_rating or '—' }}</td>
+            <td style="max-width:180px;">
+              {% if r.title %}<strong>{{ r.title }}</strong><br>{% endif %}
+              <span style="font-size:.8rem;color:var(--text-muted);">{{ r.review[:80] if r.review else '—' }}{{ '…' if r.review and r.review|length > 80 }}</span>
+            </td>
+            <td>{% if r.is_verified_purchase %}<span class="badge badge--success">✓</span>{% else %}—{% endif %}</td>
+            <td style="white-space:nowrap;">{{ r.created_at.strftime('%d %b %Y') }}</td>
+            <td>
+              <span class="badge badge--{{ 'success' if r.is_approved else 'muted' }}">
+                {{ 'Shown' if r.is_approved else 'Hidden' }}
+              </span>
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('ratings.toggle_seller_rating', rid=r.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn--xs btn--ghost">{{ 'Hide' if r.is_approved else 'Show' }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Daily revenue
+const revData = {{ revenue_data | tojson }};
+new Chart(document.getElementById('revenueChart'), {
+  type: 'line',
+  data: {
+    labels: revData.map(d => d.date.slice(5)),
+    datasets: [{
+      label: 'Revenue', data: revData.map(d => d.revenue),
+      borderColor: '#C8773A', backgroundColor: 'rgba(200,119,58,.1)',
+      fill: true, tension: 0.4, pointRadius: 2,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: { y: { ticks: { callback: v => '₹'+(v>=1000?(v/1000).toFixed(0)+'k':v) } } }
+  }
+});
+
+// Monthly
+const monthly = {{ monthly | tojson }};
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: monthly.map(m => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m[1]-1] + ' ' + String(m[0]).slice(2)),
+    datasets: [
+      { label: 'Revenue', data: monthly.map(m => parseFloat(m[2]||0)), backgroundColor: '#C8773A', borderRadius: 4, yAxisID: 'y' },
+      { label: 'Orders',  data: monthly.map(m => m[3]||0), backgroundColor: '#2C4A3E', borderRadius: 4, yAxisID: 'y2' }
+    ]
+  },
+  options: {
+    scales: {
+      y:  { position: 'left',  ticks: { callback: v => '₹'+(v>=1000?(v/1000).toFixed(0)+'k':v) } },
+      y2: { position: 'right', grid: { drawOnChartArea: false } }
+    }
+  }
+});
+
+// Order status
+const sd = {{ status_data | tojson }};
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(sd).map(s => s.charAt(0).toUpperCase()+s.slice(1)),
+    datasets: [{ data: Object.values(sd),
+      backgroundColor: ['#F59E0B','#3B82F6','#8B5CF6','#06B6D4','#10B981','#EF4444','#9CA3AF'] }]
+  },
+  options: { plugins: { legend: { position: 'right' } }, cutout: '55%' }
+});
+
+{% if summary.rating_count > 0 %}
+// Rating distribution
+const rd = {{ rat_dist | tojson }};
+new Chart(document.getElementById('ratingChart'), {
+  type: 'bar',
+  data: {
+    labels: ['1★','2★','3★','4★','5★'],
+    datasets: [{ data: [rd['1']||0,rd['2']||0,rd['3']||0,rd['4']||0,rd['5']||0],
+      backgroundColor: ['#EF4444','#F97316','#F59E0B','#84CC16','#10B981'], borderRadius: 4 }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { stepSize: 1 } } } }
+});
+
+// Dimension radar — average of quality, comm, delivery
+const allRatings = {{ all_ratings | map(attribute='rating')   | list | tojson }};
+const qualRatings = {{ all_ratings | map(attribute='quality_rating') | select | list | tojson }};
+const commRatings = {{ all_ratings | map(attribute='communication_rating') | select | list | tojson }};
+const delRatings  = {{ all_ratings | map(attribute='delivery_rating') | select | list | tojson }};
+const avg = arr => arr.length ? arr.reduce((a,b) => a+b, 0)/arr.length : 0;
+new Chart(document.getElementById('dimensionChart'), {
+  type: 'radar',
+  data: {
+    labels: ['Overall', 'Quality', 'Communication', 'Delivery'],
+    datasets: [{
+      label: 'Avg Score',
+      data: [avg(allRatings), avg(qualRatings), avg(commRatings), avg(delRatings)],
+      backgroundColor: 'rgba(200,119,58,.2)',
+      borderColor: '#C8773A', pointBackgroundColor: '#C8773A',
+    }]
+  },
+  options: { scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } } }
+});
+{% endif %}
+</script>
+{% endblock %}
+{% endblock %}

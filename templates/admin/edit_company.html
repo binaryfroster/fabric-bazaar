@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Edit Company — {{ comp.name }}{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+    <div class="dashboard__topbar">
+      <a href="{{ url_for('admin.company_detail', cid=comp.id) }}" class="btn btn--ghost btn--sm">← Back</a>
+      <h1>Edit: {{ comp.name }}</h1>
+    </div>
+    <form method="POST" enctype="multipart/form-data" class="profile-form">
+      {{ form.hidden_tag() }}
+      <div class="form-section">
+        <h3>🏢 Basic Information</h3>
+        <div class="form-group">{{ form.name.label }} {{ form.name(class="form-control") }}{% if form.name.errors %}<div class="form-error">{{ form.name.errors[0] }}</div>{% endif %}</div>
+        <div class="form-group">{{ form.tagline.label }} {{ form.tagline(class="form-control") }}</div>
+        <div class="form-group">{{ form.description.label }} {{ form.description(class="form-control", rows=5) }}{% if form.description.errors %}<div class="form-error">{{ form.description.errors[0] }}</div>{% endif %}</div>
+        <div class="form-row">
+          <div class="form-group">{{ form.business_type.label }} {{ form.business_type(class="form-control") }}</div>
+          <div class="form-group">{{ form.established_year.label }} {{ form.established_year(class="form-control") }}</div>
+        </div>
+      </div>
+      <div class="form-section">
+        <h3>📞 Contact</h3>
+        <div class="form-row">
+          <div class="form-group">{{ form.phone.label }} {{ form.phone(class="form-control") }}</div>
+          <div class="form-group">{{ form.whatsapp.label }} {{ form.whatsapp(class="form-control") }}</div>
+          <div class="form-group">{{ form.email.label }} {{ form.email(class="form-control") }}</div>
+          <div class="form-group">{{ form.website.label }} {{ form.website(class="form-control") }}</div>
+        </div>
+      </div>
+      <div class="form-section">
+        <h3>📍 Address</h3>
+        <div class="form-group">{{ form.address_line1.label }} {{ form.address_line1(class="form-control") }}</div>
+        <div class="form-group">{{ form.address_line2.label }} {{ form.address_line2(class="form-control") }}</div>
+        <div class="form-row">
+          <div class="form-group">{{ form.city.label }} {{ form.city(class="form-control") }}</div>
+          <div class="form-group">{{ form.state.label }} {{ form.state(class="form-control") }}</div>
+          <div class="form-group">{{ form.postal_code.label }} {{ form.postal_code(class="form-control") }}</div>
+        </div>
+      </div>
+      <div class="form-section">
+        <h3>🏛️ Business IDs</h3>
+        <div class="form-row">
+          <div class="form-group">{{ form.gst_number.label }} {{ form.gst_number(class="form-control") }}</div>
+          <div class="form-group">{{ form.pan_number.label }} {{ form.pan_number(class="form-control") }}</div>
+        </div>
+      </div>
+      <div class="form-section">
+        <h3>🖼️ Branding</h3>
+        {% if comp.logo %}<p><img src="{{ media_url(comp.logo, 'companies') }}" height="60" style="border-radius:50%;margin-bottom:0.5rem;" loading="lazy"></p>{% endif %}
+        <div class="form-row">
+          <div class="form-group">{{ form.logo.label }} {{ form.logo(class="form-control-file") }}</div>
+          <div class="form-group">{{ form.banner.label }} {{ form.banner(class="form-control-file") }}</div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn--primary btn--lg">Save Changes</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

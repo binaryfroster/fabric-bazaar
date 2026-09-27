@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+    <div class="dashboard__topbar"><h1>Admin Dashboard</h1></div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card__num">{{ stats.total_companies }}</div><div class="stat-card__label">Total Sellers</div></div>
+      <div class="stat-card stat-card--warn"><div class="stat-card__num">{{ stats.pending_companies }}</div><div class="stat-card__label">⏳ Pending Approval</div></div>
+      <div class="stat-card"><div class="stat-card__num">{{ stats.active_products }}</div><div class="stat-card__label">Live Products</div></div>
+      <div class="stat-card"><div class="stat-card__num">{{ stats.total_orders }}</div><div class="stat-card__label">Total Orders</div></div>
+      <div class="stat-card"><div class="stat-card__num">{{ stats.total_users }}</div><div class="stat-card__label">Customers</div></div>
+      <div class="stat-card stat-card--warn"><div class="stat-card__num">{{ stats.low_stock }}</div><div class="stat-card__label">Low Stock</div></div>
+    </div>
+
+    <!-- Pending Sellers — most important section -->
+    {% if pending_companies %}
+    <div class="dashboard-table-section pending-section">
+      <h3>⏳ Sellers Awaiting Your Approval ({{ pending_companies|length }})</h3>
+      <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">
+        These sellers have registered but are NOT visible on the marketplace yet. Review and approve or reject each one.
+      </p>
+      <table class="data-table">
+        <thead><tr><th>Company</th><th>Type</th><th>Owner</th><th>Location</th><th>Products</th><th>Registered</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for c in pending_companies %}
+          <tr>
+            <td><strong>{{ c.name }}</strong>{% if c.tagline %}<br><small style="color:var(--text-muted)">{{ c.tagline }}</small>{% endif %}</td>
+            <td>{{ c.business_type or '—' }}</td>
+            <td>{{ c.user.full_name }}<br><small>{{ c.user.email }}</small></td>
+            <td>{{ c.city or '—' }}{% if c.state %}, {{ c.state }}{% endif %}</td>
+            <td>{{ c.product_count }}</td>
+            <td>{{ c.created_at.strftime('%d %b %Y') }}</td>
+            <td style="white-space:nowrap;">
+              <a href="{{ url_for('admin.company_detail', cid=c.id) }}" class="btn btn--xs btn--outline">View Details</a>
+              <form method="POST" action="{{ url_for('admin.verify_company', cid=c.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn--xs btn--success">✓ Approve</button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.reject_company', cid=c.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn--xs btn--danger" onclick="return confirm('Reject and suspend this company?')">✗ Reject</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert--success">✅ No pending seller approvals — all caught up!</div>
+    {% endif %}
+
+    <!-- Recent Orders -->
+    {% if recent_orders %}
+    <div class="dashboard-table-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <h3>Recent Orders</h3>
+        <a href="{{ url_for('admin.orders') }}" class="section__link">View All →</a>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Order #</th><th>Customer</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for o in recent_orders %}
+          <tr>
+            <td><strong>{{ o.order_number }}</strong></td>
+            <td>{{ o.full_name }}</td>
+            <td>{{ o.total | inr }}</td>
+            <td><span class="badge badge--{{ 'success' if o.status=='delivered' else 'info' if o.status in ['shipped','confirmed'] else 'muted' }}">{{ o.status.title() }}</span></td>
+            <td>{{ o.created_at.strftime('%d %b %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions -->
+    <div class="quick-actions" style="margin-top:1.5rem;">
+      <a href="{{ url_for('admin.add_product') }}"  class="btn btn--primary"><i class="fas fa-plus"></i> Add Product</a>
+      <a href="{{ url_for('admin.add_category') }}" class="btn btn--outline"><i class="fas fa-tags"></i> Add Category</a>
+      <a href="{{ url_for('admin.companies') }}"    class="btn btn--outline"><i class="fas fa-building"></i> All Sellers</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

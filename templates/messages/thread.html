@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}{{ thread.subject }} — Messages{% endblock %}
+{% block extra_css %}
+<style>
+.chat-wrap{max-width:860px;margin:0 auto;padding:1.25rem 1rem 2rem}
+.chat-box{background:var(--white);border:1px solid var(--border-lt);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.chat-box-header{display:flex;align-items:center;gap:.875rem;padding:1rem 1.25rem;border-bottom:1px solid var(--border-lt);background:var(--white)}
+.chat-box-header__avatar{width:44px;height:44px;border-radius:50%;background:var(--secondary);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden}
+.chat-box-header__avatar img{width:100%;height:100%;object-fit:cover}
+.chat-body{padding:1.25rem;min-height:360px;max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem;background:#F9F7F4}
+.chat-footer{padding:.875rem 1.25rem;border-top:1px solid var(--border-lt);background:var(--white)}
+.chat-footer-form{display:flex;gap:.75rem;align-items:flex-end}
+.chat-textarea{flex:1;border:1.5px solid var(--border);border-radius:22px;padding:.65rem 1rem;font-size:.875rem;line-height:1.5;resize:none;outline:none;font-family:inherit;transition:border-color var(--t);max-height:120px;overflow-y:auto}
+.chat-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(200,119,58,.1)}
+.send-btn{width:46px;height:46px;border-radius:50%;background:var(--primary);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;transition:all var(--t);flex-shrink:0}
+.send-btn:hover{background:var(--primary-dark);transform:scale(1.05)}
+.msg-bubble{display:flex;flex-direction:column;max-width:74%}
+.msg-bubble--mine{align-self:flex-end;align-items:flex-end}
+.msg-bubble--theirs{align-self:flex-start;align-items:flex-start}
+.msg-content{padding:.65rem 1rem;border-radius:18px;font-size:.875rem;line-height:1.6;word-break:break-word;white-space:pre-wrap}
+.msg-bubble--mine .msg-content{background:var(--secondary);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble--theirs .msg-content{background:var(--white);color:var(--text-dark);border:1px solid var(--border-lt);border-bottom-left-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.msg-meta{font-size:.67rem;color:var(--text-light);margin-top:.25rem;padding:0 .25rem}
+.product-ref{display:flex;align-items:center;gap:.65rem;background:var(--primary-light);border:1px solid rgba(200,119,58,.2);border-radius:var(--radius-sm);padding:.65rem .875rem;margin-bottom:.75rem;text-decoration:none}
+.product-ref img{width:44px;height:44px;object-fit:cover;border-radius:6px}
+.product-ref__info{font-size:.8rem;color:var(--primary);font-weight:600}
+.product-ref__name{font-size:.875rem;font-weight:700;color:var(--text-dark)}
+.new-msg-indicator{text-align:center;padding:.4rem;font-size:.72rem;color:var(--text-muted);background:rgba(200,119,58,.06);border-radius:20px;margin:.25rem auto;width:fit-content;padding:.3rem .875rem}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-wrap">
+  <!-- Back nav -->
+  <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;">
+    <a href="{{ url_for('messages.inbox') }}" class="btn btn--ghost btn--sm">
+      <i class="fas fa-arrow-left"></i> All Messages
+    </a>
+    {% if current_user.is_customer %}
+    <div style="font-size:.78rem;color:var(--text-muted);">
+      Conversation with <strong style="color:var(--secondary);">{{ thread.company.name }}</strong>
+    </div>
+    {% else %}
+    <div style="font-size:.78rem;color:var(--text-muted);">
+      Conversation with <strong style="color:var(--secondary);">{{ thread.customer.full_name }}</strong>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Product reference card -->
+  {% if thread.product %}
+  <a href="{{ url_for('shop.product_detail', slug=thread.product.slug) }}" class="product-ref">
+    {% if thread.product.primary_image %}
+    <img src="{{ media_url(thread.product.primary_image, 'products') }}" alt="" loading="lazy">
+    {% endif %}
+    <div>
+      <div class="product-ref__info"><i class="fas fa-tag"></i> Enquiry about</div>
+      <div class="product-ref__name">{{ thread.product.name }}</div>
+    </div>
+    <i class="fas fa-external-link-alt" style="margin-left:auto;color:var(--primary);font-size:.8rem;"></i>
+  </a>
+  {% endif %}
+
+  <!-- Chat Box -->
+  <div class="chat-box">
+    <!-- Header -->
+    <div class="chat-box-header">
+      <div class="chat-box-header__avatar">
+        {% if current_user.is_customer and thread.company.logo %}
+        <img src="{{ media_url(thread.company.logo, 'companies') }}" alt="" loading="lazy">
+        {% elif current_user.is_customer %}
+        {{ thread.company.name[0] }}
+        {% else %}
+        {{ thread.customer.first_name[0] }}
+        {% endif %}
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.95rem;color:var(--text-dark);">
+          {% if current_user.is_customer %}{{ thread.company.name }}{% else %}{{ thread.customer.full_name }}{% endif %}
+        </div>
+        <div style="font-size:.75rem;color:var(--text-muted);">{{ thread.subject }}</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#4ADE80;display:inline-block;"></span>
+        <span style="font-size:.72rem;color:var(--text-muted);">Online</span>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-body" id="chatBody">
+      {% set prev_date = namespace(val=None) %}
+      {% for msg in messages %}
+        {% set msg_date = msg.created_at.strftime('%d %b %Y') %}
+        {% if msg_date != prev_date.val %}
+        <div class="new-msg-indicator">{{ msg_date }}</div>
+        {% set prev_date.val = msg_date %}
+        {% endif %}
+
+        {% set is_mine = msg.sender_id == current_user.id %}
+        <div class="msg-bubble {% if is_mine %}msg-bubble--mine{% else %}msg-bubble--theirs{% endif %}">
+          <div class="msg-content">{{ msg.body }}</div>
+          <div class="msg-meta">
+            {{ msg.sender.first_name }} · {{ msg.created_at.strftime('%I:%M %p') }}
+            {% if is_mine %}
+            · <i class="fas fa-check{% if msg.is_read %}-double{% endif %}" style="font-size:.6rem;"></i>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        <div style="text-align:center;color:var(--text-muted);font-size:.875rem;padding:2rem 0;">
+          No messages yet. Send one below 👇
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Input -->
+    {% if thread.is_open %}
+    <div class="chat-footer">
+      <form method="POST" class="chat-footer-form" id="chatForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <textarea name="body" class="chat-textarea" id="chatInput"
+                  placeholder="Type a message…" rows="1" required
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();document.getElementById('chatForm').submit();}"></textarea>
+        <button type="submit" class="send-btn" title="Send message">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+    {% else %}
+    <div style="padding:1rem 1.25rem;border-top:1px solid var(--border-lt);text-align:center;font-size:.875rem;color:var(--text-muted);">
+      This conversation is closed.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Poll for new messages -->
+  <div style="text-align:center;margin-top:.75rem;font-size:.72rem;color:var(--text-muted);" id="pollStatus">
+    Auto-refreshes every 15s for new replies
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Scroll to bottom on load
+const chatBody = document.getElementById('chatBody');
+if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
+
+// Auto-grow textarea
+const ta = document.getElementById('chatInput');
+if (ta) {
+  ta.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  });
+}
+
+// Poll for new messages every 15s
+let lastCount = {{ messages|length }};
+function pollChat() {
+  fetch(window.location.href + (window.location.href.includes('?') ? '&' : '?') + '_poll=1')
+    .then(r => r.text())
+    .then(html => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const newBody = doc.getElementById('chatBody');
+      if (newBody) {
+        const newMsgs = newBody.querySelectorAll('.msg-bubble');
+        if (newMsgs.length > lastCount) {
+          chatBody.innerHTML = newBody.innerHTML;
+          chatBody.scrollTop = chatBody.scrollHeight;
+          lastCount = newMsgs.length;
+          document.getElementById('pollStatus').textContent = '✓ Updated just now';
+          setTimeout(() => {
+            document.getElementById('pollStatus').textContent = 'Auto-refreshes every 15s for new replies';
+          }, 3000);
+        }
+      }
+    }).catch(() => {});
+}
+setInterval(pollChat, 15000);
+</script>
+{% endblock %}

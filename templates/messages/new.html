@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}New Message{% endblock %}
+{% block content %}
+<div class="container" style="max-width:600px;padding:2rem 1rem 3rem;">
+  <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1.5rem;">
+    💬 {% if comp %}Message {{ comp.name }}{% else %}New Message{% endif %}
+  </h1>
+
+  {% if product %}
+  <div style="background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;">
+    {% if product.primary_image %}
+    <img src="{{ media_url(product.primary_image, 'products') }}"
+         style="width:44px;height:44px;object-fit:cover;border-radius:6px;" loading="lazy">
+    {% endif %}
+    <div>
+      <div style="font-size:.75rem;color:var(--text-muted);">Asking about:</div>
+      <strong>{{ product.name }}</strong>
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="POST" class="profile-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if comp %}<input type="hidden" name="company_id" value="{{ comp.id }}">{% endif %}
+    {% if product %}<input type="hidden" name="product_id" value="{{ product.id }}">{% endif %}
+
+    {% if not comp %}
+    <div class="form-group">
+      <label>Select Seller *</label>
+      <select name="company_id" class="form-control" required>
+        <option value="">Choose a seller…</option>
+        {% for c in companies %}
+        <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label>Subject *</label>
+      <input type="text" name="subject" class="form-control" required
+             value="{% if product %}Inquiry about {{ product.name }}{% endif %}"
+             placeholder="e.g. Do you make this in dark blue?">
+    </div>
+    <div class="form-group">
+      <label>Your Message *</label>
+      <textarea name="body" class="form-control" rows="5" required
+                placeholder="Write your question or request here…"></textarea>
+    </div>
+    <button type="submit" class="btn btn--primary btn--lg">Send Message</button>
+    <a href="{{ url_for('messages.inbox') }}" class="btn btn--ghost btn--lg">Cancel</a>
+  </form>
+</div>
+{% endblock %}

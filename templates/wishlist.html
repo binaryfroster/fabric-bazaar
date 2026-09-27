@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}My Wishlist{% endblock %}
+
+{% block content %}
+<div class="container" style="padding:2rem 0 4rem;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+    <h1 style="font-size:1.5rem;font-weight:700;">My Wishlist</h1>
+    <span style="color:var(--text-muted);font-size:.9rem;">{{ items|length }} item{{ 's' if items|length != 1 }}</span>
+  </div>
+
+  {% if not items %}
+  <div style="text-align:center;padding:4rem 1rem;">
+    <div style="font-size:4rem;margin-bottom:1rem;">🤍</div>
+    <h2 style="font-size:1.2rem;font-weight:600;margin-bottom:.5rem;">Your wishlist is empty</h2>
+    <p style="color:var(--text-muted);margin-bottom:1.5rem;">Save items you love and come back to them anytime.</p>
+    <a href="{{ url_for('shop.index') }}" class="btn btn--primary">Browse Shop</a>
+  </div>
+  {% else %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.25rem;">
+    {% for item in items %}
+    <div class="product-card" style="position:relative;">
+      <a href="{{ url_for('shop.product_detail', slug=item.product.slug) }}">
+        <div class="product-card__img-wrap">
+          <img src="{{ media_url(item.product.primary_image, 'products') }}"
+               alt="{{ item.product.name }}" class="product-card__img" loading="lazy"
+               onerror="this.src='{{ url_for('static', filename='images/placeholder.jpg') }}'">
+        </div>
+        <div class="product-card__body">
+          {% if item.product.company %}
+          <p class="product-card__seller">{{ item.product.company.name }} ✓</p>
+          {% endif %}
+          <h3 class="product-card__name">{{ item.product.name }}</h3>
+          <div class="product-card__price">
+            <span class="product-card__price--current">{{ currency_symbol }}{{ item.product.display_price|int }}</span>
+            {% if item.product.is_on_sale %}
+            <span class="product-card__price--original">{{ currency_symbol }}{{ item.product.price|int }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      <div style="display:flex;gap:.5rem;padding:.5rem 1rem 1rem;">
+        <form action="{{ url_for('cart.add_to_cart', product_id=item.product.id) }}" method="post" style="flex:1;">
+          {{ csrf_token() if csrf_token is defined }}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="quantity" value="1">
+          <button class="btn btn--primary btn--sm" style="width:100%;"
+                  {% if not item.product.in_stock %}disabled{% endif %}>
+            {% if item.product.in_stock %}Add to Cart{% else %}Out of Stock{% endif %}
+          </button>
+        </form>
+        <form action="{{ url_for('wishlist.remove', item_id=item.id) }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--outline btn--sm" title="Remove from wishlist">✕</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

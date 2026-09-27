@@ -1,0 +1,115 @@
+<form method="POST" enctype="multipart/form-data" class="profile-form">
+  {{ form.hidden_tag() }}
+
+  <div class="form-section">
+    <h3>🏢 Basic Information</h3>
+    <div class="form-group">
+      {{ form.name.label }} <span class="required">*</span>
+      {{ form.name(class="form-control", placeholder="e.g. Sharma Textiles Pvt Ltd") }}
+      {% if form.name.errors %}<div class="form-error">{{ form.name.errors[0] }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+      {{ form.tagline.label }}
+      {{ form.tagline(class="form-control", placeholder="e.g. Premium Cotton Since 1985") }}
+    </div>
+    <div class="form-group">
+      {{ form.description.label }} <span class="required">*</span>
+      {{ form.description(class="form-control", rows=5, placeholder="Describe your business, products, speciality, experience...") }}
+      {% if form.description.errors %}<div class="form-error">{{ form.description.errors[0] }}</div>{% endif %}
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        {{ form.business_type.label }}
+        {{ form.business_type(class="form-control") }}
+      </div>
+      <div class="form-group">
+        {{ form.established_year.label }}
+        {{ form.established_year(class="form-control", placeholder="e.g. 1995") }}
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>📞 Contact Details</h3>
+    <div class="form-row">
+      <div class="form-group">
+        {{ form.phone.label }}
+        {{ form.phone(class="form-control", placeholder="10-digit mobile") }}
+        {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors[0] }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        {{ form.whatsapp.label }}
+        {{ form.whatsapp(class="form-control", placeholder="WhatsApp number") }}
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        {{ form.email.label }}
+        {{ form.email(class="form-control", placeholder="business@email.com") }}
+      </div>
+      <div class="form-group">
+        {{ form.website.label }}
+        {{ form.website(class="form-control", placeholder="https://yourwebsite.com") }}
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>📍 Business Address</h3>
+    <div class="form-group">
+      {{ form.address_line1.label }}
+      {{ form.address_line1(class="form-control", placeholder="Street / Shop No.") }}
+    </div>
+    <div class="form-group">
+      {{ form.address_line2.label }}
+      {{ form.address_line2(class="form-control", placeholder="Area / Landmark") }}
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        {{ form.city.label }}
+        {{ form.city(class="form-control") }}
+      </div>
+      <div class="form-group">
+        {{ form.state.label }}
+        {{ form.state(class="form-control") }}
+      </div>
+      <div class="form-group">
+        {{ form.postal_code.label }}
+        {{ form.postal_code(class="form-control", placeholder="6-digit PIN") }}
+        {% if form.postal_code.errors %}<div class="form-error">{{ form.postal_code.errors[0] }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>🏛️ Business Identifiers</h3>
+    <div class="form-row">
+      <div class="form-group">
+        {{ form.gst_number.label }}
+        {{ form.gst_number(class="form-control", placeholder="GST Registration Number") }}
+      </div>
+      <div class="form-group">
+        {{ form.pan_number.label }}
+        {{ form.pan_number(class="form-control", placeholder="PAN Number") }}
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>🖼️ Branding</h3>
+    <div class="form-row">
+      <div class="form-group">
+        {{ form.logo.label }}
+        {{ form.logo(class="form-control-file") }}
+        <small>Recommended: 200×200 square logo</small>
+      </div>
+      <div class="form-group">
+        {{ form.banner.label }}
+        {{ form.banner(class="form-control-file") }}
+        <small>Recommended: 1200×300 banner image</small>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn--primary btn--lg">{{ form.submit.label.text }}</button>
+</form>

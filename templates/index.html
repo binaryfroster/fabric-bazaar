@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block title %}{{ brand_name }} — {{ brand_tagline }}{% endblock %}
+{% block extra_css %}
+<style>
+.hero-v2{background:linear-gradient(140deg,#1a3028 0%,#2C4A3E 55%,#3d6b5c 100%);min-height:520px;display:flex;align-items:center;position:relative;overflow:hidden;}
+.hero-v2::before{content:'';position:absolute;inset:0;opacity:.04;background-image:repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%);background-size:30px 30px;}
+.hero-v2__inner{display:grid;grid-template-columns:1fr 380px;gap:4rem;align-items:center;padding:4rem 0;position:relative;z-index:1;width:100%;}
+.hero-v2__tag{display:inline-flex;align-items:center;gap:.4rem;background:rgba(232,184,109,.2);border:1px solid rgba(232,184,109,.35);border-radius:20px;padding:.3rem .875rem;font-size:.73rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#E8B86D;margin-bottom:1.25rem;}
+.hero-v2__title{font-family:'Playfair Display',serif;font-size:clamp(2rem,4.5vw,3.2rem);font-weight:700;color:#fff;line-height:1.15;margin-bottom:1rem;}
+.hero-v2__title em{font-style:normal;color:#E8B86D;}
+.hero-v2__sub{font-size:1rem;color:rgba(255,255,255,.7);line-height:1.75;margin-bottom:2rem;}
+.hero-v2__actions{display:flex;gap:.875rem;flex-wrap:wrap;margin-bottom:2rem;}
+.hero-v2__stats{display:flex;gap:2rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.12);}
+.hero-v2__stat strong{display:block;font-size:1.4rem;font-weight:800;color:#fff;}
+.hero-v2__stat span{font-size:.7rem;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.06em;}
+.hero-card{background:rgba(255,255,255,.08);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:1.25rem;color:#fff;}
+.hero-card__img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:12px;margin-bottom:1rem;}
+.hero-card__ph{width:100%;aspect-ratio:3/2;background:rgba(255,255,255,.08);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:3.5rem;margin-bottom:1rem;}
+.hero-card__name{font-weight:700;font-size:.95rem;line-height:1.35;margin-bottom:.4rem;}
+.hero-card__price{font-size:1.5rem;font-weight:800;color:#E8B86D;}
+.hero-card__old{font-size:.82rem;text-decoration:line-through;opacity:.45;margin-left:.35rem;}
+.hero-card__btn{display:block;text-align:center;background:var(--primary);color:#fff;border-radius:10px;padding:.65rem;font-weight:700;font-size:.85rem;margin-top:.875rem;transition:background .2s;}
+.hero-card__btn:hover{background:var(--primary-dark);}
+.trust-bar{background:#fff;border-bottom:1px solid var(--border-lt);}
+.trust-bar__inner{display:flex;justify-content:center;gap:0;flex-wrap:wrap;}
+.trust-item{display:flex;align-items:center;gap:.55rem;padding:.8rem 1.4rem;border-right:1px solid var(--border-lt);font-size:.8rem;font-weight:600;color:var(--text-muted);}
+.trust-item:last-child{border-right:none;}
+.trust-item i{color:var(--primary);}
+.cat-row{display:flex;gap:.75rem;overflow-x:auto;padding:.25rem .25rem .75rem;scrollbar-width:none;}
+.cat-row::-webkit-scrollbar{display:none;}
+.cat-pill{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:.45rem;padding:1rem 1.1rem;background:var(--bg-card);border:1.5px solid var(--border-lt);border-radius:14px;text-decoration:none;min-width:95px;transition:all .18s;}
+.cat-pill:hover{border-color:var(--primary);background:var(--primary-light);transform:translateY(-2px);box-shadow:0 4px 12px rgba(200,119,58,.15);}
+.cat-pill__icon{font-size:1.75rem;line-height:1;}
+.cat-pill__name{font-size:.73rem;font-weight:700;color:var(--text-dark);text-align:center;}
+.sec-hd{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.75rem;gap:1rem;}
+.sec-hd h2{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--text-dark);}
+.sec-hd p{font-size:.85rem;color:var(--text-muted);margin-top:.15rem;}
+.seller-grid-home{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.1rem;}
+.sc{border-radius:var(--radius);overflow:hidden;border:1px solid var(--border-lt);background:var(--bg-card);transition:box-shadow .2s,transform .2s;text-decoration:none;display:block;}
+.sc:hover{box-shadow:var(--shadow-md);transform:translateY(-3px);}
+.sc__banner{height:90px;background:linear-gradient(135deg,var(--secondary),var(--secondary-light));position:relative;}
+.sc__banner img{width:100%;height:100%;object-fit:cover;}
+.sc__logo{width:48px;height:48px;background:var(--bg-card);border:3px solid #fff;border-radius:10px;position:absolute;bottom:-20px;left:1rem;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,.1);}
+.sc__logo img{width:100%;height:100%;object-fit:cover;}
+.sc__body{padding:1.5rem 1rem 1.1rem;}
+.sc__name{font-weight:800;font-size:.92rem;color:var(--text-dark);}
+.sc__meta{font-size:.76rem;color:var(--text-muted);margin-top:.15rem;}
+.why-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1.25rem;}
+.why-card{text-align:center;padding:1.75rem 1rem;background:rgba(255,255,255,.06);border-radius:var(--radius);border:1px solid rgba(255,255,255,.08);}
+.why-card__icon{width:50px;height:50px;background:rgba(232,184,109,.18);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto .875rem;font-size:1.2rem;color:#E8B86D;}
+.why-card h3{font-size:.9rem;font-weight:700;color:#fff;margin-bottom:.3rem;}
+.why-card p{font-size:.76rem;color:rgba(255,255,255,.45);line-height:1.55;}
+.promo{background:linear-gradient(135deg,#C8773A,#E8A06B);border-radius:var(--radius-lg);padding:2.25rem 2rem;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;}
+.promo h3{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;}
+.promo p{font-size:.9rem;opacity:.85;margin-top:.3rem;}
+@media(max-width:860px){.hero-v2__inner{grid-template-columns:1fr;}.hero-card{display:none;}}
+@media(max-width:600px){.trust-item{padding:.6rem .7rem;font-size:.72rem;}.promo{flex-direction:column;}.hero-v2__stats{gap:1.25rem;}}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero-v2">
+  <div class="container hero-v2__inner">
+    <div>
+      <div class="hero-v2__tag">🇮🇳 India's Fabric Marketplace</div>
+      <h1 class="hero-v2__title">Discover India's Finest<br><em>Fabrics &amp; Textiles</em></h1>
+      <p class="hero-v2__sub">500+ verified sellers · Sarees, bed sheets, kurtas, silks &amp; more.<br>Authentic Indian craftsmanship delivered everywhere.</p>
+      <div class="hero-v2__actions">
+        <a href="{{ url_for('shop.index') }}" class="btn btn--primary btn--lg">
+          <i class="fas fa-shopping-bag"></i> Shop Now
+        </a>
+        <a href="{{ url_for('main.sellers') }}"
+           style="display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 2rem;border-radius:12px;border:2px solid rgba(255,255,255,.25);color:#fff;font-weight:600;font-size:1rem;transition:all .2s;"
+           onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='transparent'">
+          Browse Sellers
+        </a>
+      </div>
+      <div class="hero-v2__stats">
+        <div class="hero-v2__stat"><strong>500+</strong><span>Sellers</span></div>
+        <div class="hero-v2__stat"><strong>10,000+</strong><span>Products</span></div>
+        <div class="hero-v2__stat"><strong>Pan-India</strong><span>Delivery</span></div>
+        <div class="hero-v2__stat"><strong>4.8★</strong><span>Rated</span></div>
+      </div>
+    </div>
+    {% if featured_products %}
+    {% set hp = featured_products[0] %}
+    <div class="hero-card">
+      {% if hp.primary_image %}
+      <img src="{{ media_url(hp.primary_image, 'products') }}" alt="{{ hp.name }}" class="hero-card__img" loading="eager">
+      {% else %}<div class="hero-card__ph">🧵</div>{% endif %}
+      <div class="hero-card__name">{{ hp.name|truncate(55) }}</div>
+      <div>
+        <span class="hero-card__price">{{ hp.display_price | inr }}</span>
+        {% if hp.is_on_sale %}<span class="hero-card__old">{{ hp.price | inr }}</span>{% endif %}
+      </div>
+      <a href="{{ url_for('shop.product_detail', slug=hp.slug) }}" class="hero-card__btn">View Product →</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="container">
+    <div class="trust-bar__inner">
+      {% for icon, label in [('fa-shield-alt','Verified Sellers'),('fa-lock','Secure Payments'),('fa-truck','Pan-India Delivery'),('fa-undo-alt','Easy Returns'),('fa-star','Loyalty Points')] %}
+      <div class="trust-item"><i class="fas {{ icon }}"></i>{{ label }}</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORIES -->
+<section style="padding:2.5rem 0;background:var(--bg-alt);">
+  <div class="container">
+    <div class="sec-hd" style="margin-bottom:1.25rem;">
+      <div><h2>Shop by Category</h2><p>Find exactly what you need</p></div>
+    </div>
+    <div class="cat-row">
+      {% for name, icon, slug in [('Bed Sheets','🛏️','bed-sheets'),('Sarees','👘','sarees'),('Kurtas','👗','kurtas'),('Dhooties','🧣','dhooties'),('Fabrics','🧵','fabrics'),('Home','🏠','home'),('Silk','✨','sarees'),('Cotton','🌾','fabrics')] %}
+      <a href="{{ url_for('shop.index') }}?category={{ slug }}" class="cat-pill">
+        <span class="cat-pill__icon">{{ icon }}</span>
+        <span class="cat-pill__name">{{ name }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED PRODUCTS -->
+{% if featured_products %}
+<section style="padding:3rem 0;background:var(--bg);">
+  <div class="container">
+    <div class="sec-hd">
+      <div><h2>Featured Products</h2><p>Hand-picked by our curators</p></div>
+      <a href="{{ url_for('shop.index') }}?sort=featured" class="btn btn--outline btn--sm">View All →</a>
+    </div>
+    <div class="product-grid">{% for product in featured_products %}{% include '_product_card.html' %}{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+<!-- PROMO BANNER -->
+<section style="padding:2rem 0;background:var(--bg-alt);">
+  <div class="container">
+    <div class="promo">
+      <div>
+        <h3>🎁 Free Shipping on Orders Above ₹999</h3>
+        <p>Plus earn loyalty points on every purchase — redeem on your next order!</p>
+      </div>
+      <a href="{{ url_for('shop.index') }}" class="btn btn--white btn--lg" style="color:var(--primary);font-weight:700;flex-shrink:0;">Shop Now →</a>
+    </div>
+  </div>
+</section>
+
+<!-- NEW ARRIVALS -->
+{% if new_products %}
+<section style="padding:3rem 0;background:var(--bg);">
+  <div class="container">
+    <div class="sec-hd">
+      <div><h2>New Arrivals</h2><p>Just added this week</p></div>
+      <a href="{{ url_for('shop.index') }}?sort=new" class="btn btn--outline btn--sm">See More →</a>
+    </div>
+    <div class="product-grid">{% for product in new_products %}{% include '_product_card.html' %}{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+<!-- FEATURED SELLERS -->
+{% if featured_sellers %}
+<section style="padding:3rem 0;background:var(--bg-alt);">
+  <div class="container">
+    <div class="sec-hd">
+      <div><h2>Top Sellers</h2><p>Trusted by thousands across India</p></div>
+      <a href="{{ url_for('main.sellers') }}" class="btn btn--outline btn--sm">All Sellers →</a>
+    </div>
+    <div class="seller-grid-home">
+      {% for company in featured_sellers %}
+      <a href="{{ url_for('main.seller_detail', slug=company.slug) }}" class="sc">
+        <div class="sc__banner">
+          {% if company.banner %}<img src="{{ media_url(company.banner, 'companies') }}" alt="" loading="lazy">{% endif %}
+          <div class="sc__logo">
+            {% if company.logo %}<img src="{{ media_url(company.logo, 'companies') }}" alt="" loading="lazy">
+            {% else %}{{ company.name[0] }}{% endif %}
+          </div>
+        </div>
+        <div class="sc__body">
+          <div class="sc__name">{{ company.name }} {% if company.is_verified %}<span style="color:var(--success);font-size:.8rem;">✓</span>{% endif %}</div>
+          <div class="sc__meta">{{ company.city }}{% if company.state %}, {{ company.state }}{% endif %}</div>
+          {% if company.tagline %}<div style="font-size:.76rem;color:var(--text-muted);margin-top:.3rem;line-height:1.4;">{{ company.tagline|truncate(60) }}</div>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- WHY FABRICBAZAAR -->
+<section style="padding:3.5rem 0;background:var(--secondary);">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:2.5rem;">
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:#fff;">Why Shop on FabricBazaar?</h2>
+    </div>
+    <div class="why-grid">
+      {% for icon, title, desc in [
+        ('fa-certificate','Verified Sellers','Strict seller verification for every listing'),
+        ('fa-bolt','Razorpay Secure','Cards · UPI · Wallets · Net Banking'),
+        ('fa-map-marked-alt','Pan-India Delivery','We deliver to every pin code in India'),
+        ('fa-star','Loyalty Rewards','Earn ₹ back on every single purchase'),
+        ('fa-handshake','Weaver Direct','Buy direct from weavers — no middleman'),
+        ('fa-leaf','100% Authentic','Hand-verified genuine Indian textiles'),
+      ] %}
+      <div class="why-card">
+        <div class="why-card__icon"><i class="fas {{ icon }}"></i></div>
+        <h3>{{ title }}</h3>
+        <p>{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

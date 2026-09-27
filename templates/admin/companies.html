@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}Manage Companies{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+
+    <div class="dashboard__topbar">
+      <h1>Seller Companies</h1>
+      <span class="badge badge--info" style="font-size:.8rem;padding:.35rem .75rem;">
+        {{ companies.total }} companies
+      </span>
+    </div>
+
+    <!-- Filter bar -->
+    <form method="get" class="filter-bar">
+      <input type="text" name="q" value="{{ search }}" placeholder="Search by name or email…"
+             class="form-control" style="max-width:240px;">
+      <select name="status" class="form-control" style="max-width:160px;" onchange="this.form.submit()">
+        <option value=""        {% if not status        %}selected{% endif %}>All Status</option>
+        <option value="pending" {% if status=='pending' %}selected{% endif %}>⏳ Pending</option>
+        <option value="verified"{% if status=='verified'%}selected{% endif %}>✅ Verified</option>
+        <option value="inactive"{% if status=='inactive'%}selected{% endif %}>🚫 Suspended</option>
+      </select>
+      <button type="submit" class="btn btn--outline btn--sm">Filter</button>
+      {% if search or status %}
+        <a href="{{ url_for('admin.companies') }}" class="btn btn--ghost btn--sm">✕ Clear</a>
+      {% endif %}
+    </form>
+
+    <!-- Table -->
+    <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="min-width:200px">Company</th>
+          <th>Owner</th>
+          <th>Type</th>
+          <th>Location</th>
+          <th style="text-align:center">Products</th>
+          <th>Registered</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in companies.items %}
+        <tr>
+          <!-- Company name + logo -->
+          <td>
+            <div class="company-cell">
+              {% if c.logo %}
+                <img src="{{ media_url(c.logo, 'companies') }}"
+                     class="company-cell__logo" alt="{{ c.name }}" loading="lazy">
+              {% else %}
+                <div class="company-cell__logo" style="background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--primary);">
+                  {{ c.name[0] }}
+                </div>
+              {% endif %}
+              <div class="company-cell__info">
+                <strong>{{ c.name }}</strong>
+                {% if c.tagline %}<small>{{ c.tagline|truncate(40) }}</small>{% endif %}
+              </div>
+            </div>
+          </td>
+          <!-- Owner -->
+          <td>
+            <div style="font-size:.875rem;font-weight:600;color:var(--text-dark);">{{ c.user.full_name }}</div>
+            <div style="font-size:.72rem;color:var(--text-muted);">{{ c.user.email }}</div>
+          </td>
+          <!-- Type -->
+          <td style="font-size:.8rem;color:var(--text-muted);">{{ c.business_type or '—' }}</td>
+          <!-- Location -->
+          <td style="font-size:.8rem;">
+            {% if c.city %}{{ c.city }}{% endif %}
+            {% if c.state %}<br><span style="color:var(--text-muted);font-size:.72rem;">{{ c.state }}</span>{% endif %}
+            {% if not c.city %}—{% endif %}
+          </td>
+          <!-- Products -->
+          <td style="text-align:center;font-weight:700;font-size:.9rem;">{{ c.product_count }}</td>
+          <!-- Date -->
+          <td style="font-size:.8rem;color:var(--text-muted);white-space:nowrap;">
+            {{ c.created_at.strftime('%d %b %Y') }}
+          </td>
+          <!-- Status badges — stacked cleanly -->
+          <td>
+            <div style="display:flex;flex-direction:column;gap:.3rem;align-items:flex-start;">
+              {% if not c.is_active %}
+                <span class="status-pill status-pill--suspended">🚫 Suspended</span>
+              {% elif c.is_verified %}
+                <span class="status-pill status-pill--verified">✓ Verified</span>
+              {% else %}
+                <span class="status-pill status-pill--pending">⏳ Pending</span>
+              {% endif %}
+              {% if c.is_featured %}
+                <span class="status-pill status-pill--featured">⭐ Featured</span>
+              {% endif %}
+            </div>
+          </td>
+          <!-- Actions -->
+          <td>
+            <div class="action-group">
+              <a href="{{ url_for('admin.company_detail', cid=c.id) }}"
+                 class="btn btn--xs btn--outline" title="Review">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{{ url_for('admin.edit_company', cid=c.id) }}"
+                 class="btn btn--xs btn--ghost" title="Edit">
+                <i class="fas fa-pen"></i>
+              </a>
+
+              {% if not c.is_verified and c.is_active %}
+                <form method="POST" action="{{ url_for('admin.verify_company', cid=c.id) }}" style="display:contents;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn--xs btn--success" title="Approve">
+                    <i class="fas fa-check"></i>
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.reject_company', cid=c.id) }}" style="display:contents;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn--xs btn--danger" title="Reject"
+                          onclick="return confirm('Reject this company?')">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </form>
+              {% else %}
+                <form method="POST" action="{{ url_for('admin.toggle_company', cid=c.id) }}" style="display:contents;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn--xs btn--ghost"
+                          title="{{ 'Suspend' if c.is_active else 'Re-activate' }}"
+                          onclick="return confirm('{{ 'Suspend' if c.is_active else 'Re-activate' }} this company?')">
+                    <i class="fas fa-{{ 'ban' if c.is_active else 'redo' }}"></i>
+                  </button>
+                </form>
+              {% endif %}
+
+              <form method="POST" action="{{ url_for('admin.feature_company', cid=c.id) }}" style="display:contents;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn--xs btn--ghost"
+                        title="{{ 'Unfeature' if c.is_featured else 'Feature' }}">
+                  <i class="fas fa-{{ 'star' if c.is_featured else 'star' }}"
+                     style="color:{{ '#F59E0B' if c.is_featured else 'inherit' }}"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center;padding:3rem;color:var(--text-muted);">
+            <div style="font-size:2rem;margin-bottom:.5rem;">🏭</div>
+            No companies found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    {% if companies.pages > 1 %}
+    <div class="pagination">
+      {% if companies.has_prev %}
+        <a href="?page={{ companies.prev_num }}&q={{ search }}&status={{ status }}"
+           class="btn btn--outline btn--sm">← Prev</a>
+      {% endif %}
+      <span style="padding:.4rem .75rem;font-size:.875rem;color:var(--text-muted);">
+        Page {{ companies.page }} of {{ companies.pages }}
+      </span>
+      {% if companies.has_next %}
+        <a href="?page={{ companies.next_num }}&q={{ search }}&status={{ status }}"
+           class="btn btn--outline btn--sm">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends 'delivery/base.html' %}
+{% block page_title %}Order Detail{% endblock %}
+{% block title %}{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  <!-- Back -->
+  <div style="padding:.75rem 1rem .25rem;">
+    <a href="{{ url_for('delivery.dashboard') }}"
+       style="font-size:.82rem;font-weight:600;color:var(--green);display:inline-flex;align-items:center;gap:.3rem;">
+      <i class="fas fa-chevron-left"></i> Back to Dashboard
+    </a>
+  </div>
+
+  <!-- Order header card -->
+  <div style="margin:0 1rem .875rem;">
+    <div class="card card--pad">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.6rem;">
+        <div style="font-family:monospace;font-size:.82rem;font-weight:700;color:var(--gray-600);">
+          {{ order.order_number }}
+        </div>
+        <span class="badge badge--{{ 'green' if assignment.status=='delivered' else ('amber' if assignment.status=='out_for_delivery' else ('red' if assignment.status in ['failed','returned'] else 'blue')) }}">
+          {{ assignment.label }}
+        </span>
+      </div>
+      <div style="font-size:1.05rem;font-weight:800;">{{ order.full_name }}</div>
+      <div style="font-size:.83rem;color:var(--gray-600);margin-top:.2rem;line-height:1.6;">
+        {{ order.address_line1 }}{% if order.address_line2 %}, {{ order.address_line2 }}{% endif %}<br>
+        {{ order.city }}, {{ order.state }} – {{ order.postal_code }}
+      </div>
+      {% if order.phone %}
+      <div style="display:flex;gap:.6rem;margin-top:.75rem;">
+        <a href="tel:{{ order.phone }}" class="btn btn--green btn--sm" style="flex:1;">
+          <i class="fas fa-phone"></i> Call Customer
+        </a>
+        <a href="https://maps.google.com/?q={{ (order.address_line1~', '~order.city~' '~order.postal_code)|urlencode }}"
+           target="_blank" class="btn btn--ghost btn--sm" style="flex:1;">
+          <i class="fas fa-directions"></i> Navigate
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Order items -->
+  <div style="margin:0 1rem .875rem;">
+    <div class="card">
+      <div style="padding:.75rem 1rem;border-bottom:1px solid var(--gray-200);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);">
+        Items ({{ order.items.count() }})
+      </div>
+      {% for item in order.items %}
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;border-bottom:1px solid var(--gray-100);">
+        {% if item.product_image %}
+        <img src="{{ media_url(item.product_image, 'products') }}"
+             style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;" loading="lazy">
+        {% else %}
+        <div style="width:44px;height:44px;background:var(--gray-100);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;">🧵</div>
+        {% endif %}
+        <div style="flex:1;">
+          <div style="font-size:.88rem;font-weight:600;">{{ item.product_name }}</div>
+          <div style="font-size:.75rem;color:var(--gray-400);">Qty: {{ item.quantity }}</div>
+        </div>
+        <div style="font-size:.88rem;font-weight:700;">{{ item.subtotal | inr }}</div>
+      </div>
+      {% endfor %}
+      <div style="padding:.75rem 1rem;display:flex;justify-content:space-between;font-weight:800;font-size:.92rem;">
+        <span>Total</span><span>{{ order.total | inr }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update status form -->
+  {% if assignment.status not in ['delivered','returned'] %}
+  <div style="margin:0 1rem .875rem;">
+    <div class="card card--pad">
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:.875rem;">
+        Update Delivery Status
+      </div>
+
+      <form method="POST" action="{{ url_for('delivery.update_status', assignment_id=assignment.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Quick action buttons -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1rem;">
+          {% if assignment.status == 'assigned' %}
+          <button type="submit" name="status" value="picked_up" class="btn btn--blue btn--sm">
+            <i class="fas fa-box-open"></i> Picked Up
+          </button>
+          {% endif %}
+          {% if assignment.status in ['assigned','picked_up'] %}
+          <button type="submit" name="status" value="out_for_delivery" class="btn btn--amber btn--sm">
+            <i class="fas fa-truck"></i> Out for Delivery
+          </button>
+          {% endif %}
+          {% if assignment.status in ['assigned','picked_up','out_for_delivery'] %}
+          <button type="submit" name="status" value="attempted" class="btn btn--ghost btn--sm">
+            <i class="fas fa-bell"></i> Attempted
+          </button>
+          <button type="submit" name="status" value="failed" class="btn btn--ghost btn--sm"
+                  onclick="return confirm('Mark as delivery failed?')">
+            <i class="fas fa-times"></i> Failed
+          </button>
+          {% endif %}
+        </div>
+
+        <!-- Location -->
+        <div class="field">
+          <label>Current Location <span style="font-weight:400;color:var(--gray-400);">(optional)</span></label>
+          <input type="text" name="location"
+                 placeholder="e.g. Andheri West, Mumbai"
+                 value="{{ partner.area or '' }}">
+        </div>
+
+        <!-- Notes -->
+        <div class="field">
+          <label>Notes <span style="font-weight:400;color:var(--gray-400);">(optional)</span></label>
+          <textarea name="notes" rows="2"
+                    placeholder="e.g. Left with neighbour in flat 302"></textarea>
+        </div>
+
+        <!-- Delivered section (no OTP) -->
+        {% if assignment.status == 'out_for_delivery' %}
+        <div style="background:var(--gray-50);border:2px solid var(--green);border-radius:12px;padding:1rem;margin-top:.5rem;">
+          <div style="font-size:.8rem;font-weight:700;color:var(--green);margin-bottom:.75rem;">
+            <i class="fas fa-check-circle"></i> Confirm Delivery
+          </div>
+          <button type="submit" name="status" value="delivered"
+                  class="btn btn--green btn--full"
+                  onclick="return confirm('Confirm delivery of this order?')">
+            <i class="fas fa-check"></i> Mark as Delivered
+          </button>
+        </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div style="margin:0 1rem .875rem;">
+    <div class="card card--pad" style="background:var(--gray-50);text-align:center;padding:1.5rem;">
+      <div style="font-size:2rem;margin-bottom:.4rem;">
+        {{ '✅' if assignment.status == 'delivered' else '↩️' }}
+      </div>
+      <div style="font-weight:700;color:{{ 'var(--green)' if assignment.status == 'delivered' else 'var(--gray-600)' }};">
+        {{ assignment.label }}
+      </div>
+      <div style="font-size:.78rem;color:var(--gray-400);margin-top:.25rem;">
+        Updated {{ assignment.updated_at.strftime('%d %b %Y, %I:%M %p') }}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Tracking events (chronological — oldest first) -->
+  {% if events %}
+  <div style="margin:0 1rem 2rem;">
+    <div class="card card--pad">
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:.875rem;">
+        Tracking History
+      </div>
+      <div class="mini-timeline">
+        {% for e in events | reverse %}
+        <div class="mini-event {% if loop.last %}mini-event--latest{% endif %}">
+          <div class="mini-event__dot"></div>
+          <div class="mini-event__body">
+            <div class="mini-event__status">{{ e.label }}{% if e.location %} · {{ e.location }}{% endif %}</div>
+            <div class="mini-event__time">{{ e.timestamp.strftime('%d %b %Y, %I:%M %p') }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

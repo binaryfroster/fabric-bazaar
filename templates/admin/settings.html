@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Admin Settings{% endblock %}
+
+{% block content %}
+<div class="container" style="padding:2rem 0 4rem;">
+  <div style="display:flex;gap:2rem;align-items:flex-start;">
+
+    {% include 'admin/_sidebar.html' %}
+
+    <div style="flex:1;min-width:0;">
+      <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1.5rem;">Site Settings</h1>
+
+      <!-- Stats overview -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem;">
+        <div class="stat-card">
+          <div class="stat-card__value">{{ stats.total_products }}</div>
+          <div class="stat-card__label">Total Products</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__value">{{ stats.total_companies }}</div>
+          <div class="stat-card__label">Total Sellers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__value">{{ stats.verified_companies }}</div>
+          <div class="stat-card__label">Verified Sellers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__value">{{ stats.total_users }}</div>
+          <div class="stat-card__label">Registered Users</div>
+        </div>
+      </div>
+
+      <!-- Environment info -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Environment Configuration</h2>
+        <table style="width:100%;font-size:.875rem;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid var(--border-color);">
+            <td style="padding:.6rem;color:var(--text-muted);width:200px;">Flask Environment</td>
+            <td style="padding:.6rem;font-weight:500;">{{ config.ENV if config is defined else 'development' }}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-color);">
+            <td style="padding:.6rem;color:var(--text-muted);">Database</td>
+            <td style="padding:.6rem;">
+              {% if 'postgresql' in config.SQLALCHEMY_DATABASE_URI %}
+                <span style="color:var(--success);">✓ PostgreSQL</span>
+              {% else %}
+                <span style="color:var(--warning);">⚠ SQLite (switch to PostgreSQL for production)</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-color);">
+            <td style="padding:.6rem;color:var(--text-muted);">Razorpay Key</td>
+            <td style="padding:.6rem;">
+              {% if config.RAZORPAY_KEY_ID %}
+                <span style="color:var(--success);">✓ Configured</span>
+                ({{ config.RAZORPAY_KEY_ID[:12] }}…)
+              {% else %}
+                <span style="color:var(--danger);">✗ Not configured — payments will fail</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:.6rem;color:var(--text-muted);">CSRF Protection</td>
+            <td style="padding:.6rem;color:var(--success);">✓ Enabled (Flask-WTF)</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card">
+        <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Quick Actions</h2>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+          <a href="{{ url_for('admin.categories') }}" class="btn btn--outline btn--sm">Manage Categories</a>
+          <a href="{{ url_for('admin.delivery_partners') }}" class="btn btn--outline btn--sm">Delivery Partners</a>
+          <a href="{{ url_for('admin.users') }}" class="btn btn--outline btn--sm">All Users</a>
+          <a href="{{ url_for('admin.products') }}" class="btn btn--outline btn--sm">All Products</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

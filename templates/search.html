@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Search: {{ q }}{% endblock %}
+{% block content %}
+<div class="container" style="padding:1.5rem 1rem 3rem;">
+
+  <!-- Big search bar -->
+  <form action="{{ url_for('main.search') }}" method="get" style="margin-bottom:1.25rem;">
+    <div style="display:flex;gap:.5rem;max-width:640px;">
+      <input type="text" name="q" value="{{ q }}" class="form-control"
+             placeholder="Search products, sellers, fabrics…" style="flex:1;font-size:1rem;">
+      {% if type %}<input type="hidden" name="type" value="{{ type }}">{% endif %}
+      {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+      <button type="submit" class="btn btn--primary">
+        <i class="fas fa-search"></i> Search
+      </button>
+    </div>
+  </form>
+
+  {% if q %}
+  <h2 style="font-size:1.1rem;font-weight:600;color:var(--text-muted);margin-bottom:1rem;">
+    Results for <span style="color:var(--secondary);">"{{ q }}"</span>
+    {% set total = (products|length if products else 0) + (companies|length if companies else 0) %}
+    <span style="font-weight:400;">({{ total }} result{{ 's' if total != 1 }})</span>
+  </h2>
+
+  <!-- Smart filter bar -->
+  <div class="smart-filter-bar">
+    <span class="smart-filter-bar__label">Filter:</span>
+
+    <a href="{{ url_for('main.search', q=q) }}"
+       class="filter-chip {% if not type %}filter-chip--active{% endif %}">
+      All ({{ total }})
+    </a>
+    {% if products %}
+    <a href="{{ url_for('main.search', q=q, type='products') }}"
+       class="filter-chip {% if type=='products' %}filter-chip--active{% endif %}">
+      Products ({{ products|length }})
+    </a>
+    {% endif %}
+    {% if companies %}
+    <a href="{{ url_for('main.search', q=q, type='sellers') }}"
+       class="filter-chip {% if type=='sellers' %}filter-chip--active{% endif %}">
+      Sellers ({{ companies|length }})
+    </a>
+    {% endif %}
+
+    {% if products %}
+    <span class="smart-filter-bar__label" style="margin-left:.5rem;">Sort:</span>
+    {% for s, label in [('relevance','Relevance'),('price_low','Price ↑'),('price_high','Price ↓'),('newest','Newest')] %}
+    <a href="{{ url_for('main.search', q=q, type=type, sort=s) }}"
+       class="filter-chip {% if sort == s or (not sort and s=='relevance') %}filter-chip--active{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+    {% endif %}
+  </div>
+
+  <!-- Products section -->
+  {% if products and type != 'sellers' %}
+  <div style="margin-bottom:2rem;">
+    <h3 style="font-size:1rem;font-weight:700;color:var(--secondary);margin-bottom:1rem;">
+      <i class="fas fa-tshirt"></i> Products
+    </h3>
+    <div class="product-grid">
+      {% for product in products %}{% include '_product_card.html' %}{% endfor %}
+    </div>
+    {% if type != 'products' and companies %}
+    <a href="{{ url_for('main.search', q=q, type='products') }}" class="btn btn--outline btn--sm" style="margin-top:1rem;">
+      View all {{ products|length }} products →
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Sellers section -->
+  {% if companies and type != 'products' %}
+  <div>
+    <h3 style="font-size:1rem;font-weight:700;color:var(--secondary);margin-bottom:1rem;">
+      <i class="fas fa-store"></i> Sellers
+    </h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;">
+      {% for c in companies %}
+      <a href="{{ url_for('main.seller_detail', slug=c.slug) }}" class="seller-mini-card">
+        <div class="seller-mini-card__img">
+          {% if c.logo %}
+          <img src="{{ media_url(c.logo, 'companies') }}" alt="{{ c.name }}" loading="lazy">
+          {% else %}
+          <div class="seller-mini-card__initials">{{ c.name[0] }}</div>
+          {% endif %}
+        </div>
+        <div class="seller-mini-card__body">
+          <div style="font-weight:700;font-size:.92rem;">
+            {{ c.name }}
+            {% if c.is_verified %}<i class="fas fa-check-circle" style="color:var(--primary);font-size:.75rem;"></i>{% endif %}
+          </div>
+          {% if c.city %}<div style="font-size:.76rem;color:var(--text-muted);">{{ c.city }}{% if c.state %}, {{ c.state }}{% endif %}</div>{% endif %}
+          {% if c.business_type %}<div style="font-size:.73rem;color:var(--primary);margin-top:.15rem;">{{ c.business_type }}</div>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not products and not companies %}
+  <div class="empty-state" style="padding:4rem 2rem;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:1rem;">🔍</div>
+    <h3>No results for "{{ q }}"</h3>
+    <p style="color:var(--text-muted);margin-bottom:1.5rem;">
+      Try different keywords, check spelling, or browse our categories.
+    </p>
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+      <a href="{{ url_for('shop.index') }}" class="btn btn--primary">Browse Shop</a>
+      <a href="{{ url_for('main.sellers') }}" class="btn btn--outline">Browse Sellers</a>
+    </div>
+    <!-- Suggestions -->
+    <div style="margin-top:2rem;">
+      <div style="font-size:.82rem;font-weight:600;color:var(--text-muted);margin-bottom:.75rem;">Popular searches:</div>
+      <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;">
+        {% for tag in ['Saree','Bed Sheet','Cotton Fabric','Kurta','Silk','Linen'] %}
+        <a href="{{ url_for('main.search', q=tag) }}" class="filter-chip">{{ tag }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- No query — show popular searches + categories -->
+  <div style="text-align:center;padding:2rem 0 1rem;">
+    <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:1.5rem;">Popular Searches</h2>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-bottom:2rem;">
+      {% for tag in ['Silk Saree','Cotton Bed Sheet','Linen Kurta','Banarasi','Ikat','Chanderi','Woollen Fabric','Georgette'] %}
+      <a href="{{ url_for('main.search', q=tag) }}" class="filter-chip" style="font-size:.88rem;">{{ tag }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.seller-mini-card { display:flex;align-items:center;gap:.75rem;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:.875rem;text-decoration:none;color:inherit;transition:box-shadow .2s,transform .2s; }
+.seller-mini-card:hover { box-shadow:var(--shadow-md);transform:translateY(-2px); }
+.seller-mini-card__img { width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg-alt);display:flex;align-items:center;justify-content:center; }
+.seller-mini-card__img img { width:100%;height:100%;object-fit:cover; }
+.seller-mini-card__initials { font-weight:700;font-size:1.1rem;color:var(--primary); }
+</style>
+{% endblock %}

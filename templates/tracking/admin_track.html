@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+{% block title %}Tracking — {{ order.order_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-track-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width:900px) { .admin-track-grid { grid-template-columns: 1fr; } }
+
+/* Progress stepper */
+.admin-stepper { display:flex; flex-direction:column; gap:.1rem; }
+.admin-step {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .55rem .75rem; border-radius: 10px;
+  cursor: pointer; transition: background .15s;
+  font-size: .85rem;
+}
+.admin-step:hover { background: #F3F4F6; }
+.admin-step--done   { color: #2C4A3E; }
+.admin-step--active { background: #EFF6EE; color: #2C4A3E; font-weight: 700; }
+.admin-step--pending{ color: #9CA3AF; }
+.admin-step__dot {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; flex-shrink: 0;
+  border: 2px solid #E5E7EB; background: #fff;
+}
+.admin-step--done   .admin-step__dot { background:#2C4A3E; border-color:#2C4A3E; color:#fff; }
+.admin-step--active .admin-step__dot { background:#C8773A; border-color:#C8773A; color:#fff; }
+.admin-step__line { width:2px; height:12px; background:#E5E7EB; margin-left:11px; }
+.admin-step--done + .admin-step__line { background:#2C4A3E; }
+
+/* Event log */
+.event-log-row {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .65rem .75rem;
+  border-bottom: 1px solid #F3F4F6;
+  font-size: .83rem;
+}
+.event-log-row:last-child { border-bottom: none; }
+.event-log-row:hover { background: #FAFAF8; }
+.event-log-row__icon {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #F3F4F6; display: flex; align-items: center; justify-content: center;
+  font-size: .9rem; flex-shrink: 0;
+}
+.event-log-row__body { flex: 1; min-width:0; }
+.event-log-row__status { font-weight: 700; color: #1F2937; }
+.event-log-row__meta { font-size: .73rem; color: #9CA3AF; margin-top: .1rem; }
+.event-log-row__hidden { font-size: .68rem; background: #FEF3C7; color: #92400E; padding: .1rem .4rem; border-radius: 6px; }
+.event-log-row__actions { display: flex; gap: .3rem; flex-shrink: 0; }
+
+/* Quick preset buttons */
+.preset-grid {
+  display: grid; grid-template-columns: repeat(2,1fr); gap: .45rem; margin-bottom: 1rem;
+}
+.preset-btn {
+  display: flex; align-items: center; gap: .4rem;
+  padding: .45rem .7rem; border-radius: 8px; font-size: .78rem; font-weight: 600;
+  border: 1.5px solid #E5E7EB; background: #fff; cursor: pointer;
+  transition: all .15s; text-align: left;
+}
+.preset-btn:hover { border-color: #2C4A3E; color: #2C4A3E; background: #EFF6EE; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+
+    <!-- Top bar -->
+    <div class="dashboard__topbar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;">
+      <div>
+        <a href="{{ url_for('admin.orders') }}" style="font-size:.8rem;color:var(--primary);">← All Orders</a>
+        <h1 style="font-size:1.25rem;margin-top:.1rem;">
+          📍 Tracking: <span style="font-family:monospace;">{{ order.order_number }}</span>
+        </h1>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <a href="{{ url_for('tracking.track_order', order_number=order.order_number) }}"
+           target="_blank" class="btn btn--outline btn--sm">
+          <i class="fas fa-eye"></i> Customer View
+        </a>
+        <span class="badge badge--{{
+          'success' if order.status=='delivered' else
+          'info'    if order.status in ['shipped','confirmed','processing'] else
+          'danger'  if order.status in ['cancelled','refunded'] else 'muted' }}">
+          {{ order.status.replace('_',' ').title() }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Progress bar (visual only) -->
+    <div class="chart-card" style="margin-bottom:1.5rem;padding:1.25rem 1.5rem;">
+      <div style="position:relative;height:6px;background:#E5E7EB;border-radius:3px;margin-bottom:1.25rem;">
+        <div style="position:absolute;left:0;top:0;height:100%;width:{{ progress_pct }}%;
+                    background:linear-gradient(90deg,#2C4A3E,#C8773A);border-radius:3px;transition:width .5s;"></div>
+      </div>
+      <div class="admin-stepper">
+        {% set step_labels = ['Order Placed','Confirmed','Processing','Packed','With Courier','In Transit','Out for Delivery','Delivered'] %}
+        {% for step in pipeline %}
+        {% set step_idx = loop.index0 %}
+        {% set state = 'done' if step_idx < progress_idx else ('active' if step_idx == progress_idx else 'pending') %}
+        <div class="admin-step admin-step--{{ state }}">
+          <div class="admin-step__dot">
+            {% if state == 'done' %}✓{% elif state == 'active' %}●{% else %}○{% endif %}
+          </div>
+          <span>{{ step_labels[loop.index0] if loop.index0 < step_labels|length else step }}</span>
+          {% if state == 'active' %}
+          <span style="font-size:.7rem;color:#C8773A;margin-left:auto;">← Current</span>
+          {% endif %}
+        </div>
+        {% if not loop.last %}
+        <div class="admin-step__line"></div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="admin-track-grid">
+
+      <!-- LEFT: Event log + Add form -->
+      <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+        <!-- Current tracking events -->
+        <div class="chart-card">
+          <div class="chart-card__header" style="margin-bottom:.75rem;">
+            <h3>Tracking Events ({{ events|length }})</h3>
+            <span style="font-size:.75rem;color:var(--text-muted);">Latest first</span>
+          </div>
+
+          {% if events %}
+          <div class="event-log">
+            {% for e in events %}
+            <div class="event-log-row">
+              <div class="event-log-row__icon">{{ e.icon }}</div>
+              <div class="event-log-row__body">
+                <div class="event-log-row__status">
+                  {{ e.label }}
+                  {% if not e.is_public %}
+                  <span class="event-log-row__hidden">Internal</span>
+                  {% endif %}
+                </div>
+                <div class="event-log-row__meta">
+                  {{ e.timestamp.strftime('%d %b %Y · %I:%M %p') }}
+                  {% if e.location %} · 📍 {{ e.location }}{% endif %}
+                  {% if e.message %} · {{ e.message[:60] }}{% if e.message|length > 60 %}…{% endif %}{% endif %}
+                </div>
+              </div>
+              <div class="event-log-row__actions">
+                <form method="POST"
+                      action="{{ url_for('tracking.admin_toggle_event', oid=order.id, eid=e.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn--xs btn--ghost"
+                          title="{{ 'Make Internal' if e.is_public else 'Make Public' }}">
+                    <i class="fas fa-{{ 'eye-slash' if e.is_public else 'eye' }}"></i>
+                  </button>
+                </form>
+                <form method="POST"
+                      action="{{ url_for('tracking.admin_delete_event', oid=order.id, eid=e.id) }}"
+                      onsubmit="return confirm('Delete this event?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn--xs btn--ghost" style="color:#EF4444;">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div style="text-align:center;padding:1.5rem;color:var(--text-muted);font-size:.85rem;">
+            No tracking events yet. Add the first one →
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Add tracking event form -->
+        <div class="chart-card">
+          <div class="chart-card__header"><h3>➕ Add Tracking Event</h3></div>
+
+          <!-- Quick presets -->
+          <div style="margin-bottom:1rem;">
+            <div style="font-size:.75rem;font-weight:700;color:var(--text-muted);margin-bottom:.5rem;">
+              Quick Presets
+            </div>
+            <div class="preset-grid">
+              {% for status, label in [
+                ('confirmed',         '✅ Confirmed'),
+                ('processing',        '⚙️ Processing'),
+                ('packed',            '📦 Packed'),
+                ('handed_to_courier', '🤝 With Courier'),
+                ('in_transit',        '🚀 In Transit'),
+                ('out_for_delivery',  '🚚 Out for Delivery'),
+                ('delivered',         '🎉 Delivered'),
+                ('delivery_attempted','🔔 Attempted'),
+              ] %}
+              <button type="button" class="preset-btn"
+                      onclick="applyPreset('{{ status }}', '{{ label.split(' ',1)[1] }}')">
+                {{ label }}
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+
+          <form method="POST"
+                action="{{ url_for('tracking.admin_add_event', oid=order.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group">
+              <label>Status *</label>
+              <select name="status" id="statusSelect" class="form-control" required>
+                {% for status, label in all_statuses %}
+                <option value="{{ status }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+              <div class="form-group">
+                <label>Location</label>
+                <input type="text" name="location" id="locationInput" class="form-control"
+                       placeholder="e.g. Mumbai Hub">
+              </div>
+              <div class="form-group">
+                <label>Timestamp</label>
+                <input type="datetime-local" name="timestamp" class="form-control"
+                       value="{{ now_dt if now_dt is defined else '' }}">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Message</label>
+              <textarea name="message" id="messageInput" class="form-control" rows="2"
+                        placeholder="e.g. Package scanned at sorting facility"></textarea>
+            </div>
+
+            <div style="display:flex;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer;">
+                <input type="checkbox" name="update_order_status" value="on" checked>
+                Also update order status
+              </label>
+              <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer;">
+                <input type="checkbox" name="is_public" value="on" checked>
+                Visible to customer
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn--primary">
+              <i class="fas fa-plus"></i> Add Event
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Order info + settings -->
+      <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+        <!-- Delivery details -->
+        <div class="chart-card">
+          <div class="chart-card__header"><h3>🚚 Delivery Settings</h3></div>
+          <form method="POST" action="{{ url_for('tracking.admin_set_delivery', oid=order.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+              <label>AWB / Tracking Number</label>
+              <input type="text" name="tracking_number" class="form-control"
+                     value="{{ order.tracking_number or '' }}"
+                     placeholder="e.g. 1234567890123">
+            </div>
+            <div class="form-group">
+              <label>Estimated Delivery Date</label>
+              <input type="date" name="estimated_delivery" class="form-control"
+                     value="{{ order.estimated_delivery.strftime('%Y-%m-%d') if order.estimated_delivery else '' }}">
+            </div>
+            <button type="submit" class="btn btn--outline btn--sm">
+              <i class="fas fa-save"></i> Save Settings
+            </button>
+          </form>
+        </div>
+
+        <!-- Order summary -->
+        <div class="chart-card">
+          <div class="chart-card__header"><h3>📋 Order Summary</h3></div>
+          <table class="data-table" style="font-size:.83rem;">
+            <tr><td style="color:var(--text-muted);">Customer</td>
+                <td><strong>{{ order.full_name }}</strong><br><small>{{ order.email }}</small></td></tr>
+            <tr><td style="color:var(--text-muted);">Phone</td>
+                <td>{{ order.phone or '—' }}</td></tr>
+            <tr><td style="color:var(--text-muted);">Total</td>
+                <td><strong>{{ order.total | inr }}</strong></td></tr>
+            <tr><td style="color:var(--text-muted);">Payment</td>
+                <td>
+                  <span class="badge badge--{{ 'success' if order.payment_status=='paid' else 'warn' }}">
+                    {{ order.payment_status.title() }}
+                  </span>
+                </td></tr>
+            <tr><td style="color:var(--text-muted);">Ordered</td>
+                <td>{{ order.created_at.strftime('%d %b %Y %I:%M %p') }}</td></tr>
+            <tr><td style="color:var(--text-muted);">Ship to</td>
+                <td style="font-size:.78rem;line-height:1.5;">
+                  {{ order.address_line1 }},
+                  {{ order.city }}, {{ order.state }} {{ order.postal_code }}
+                </td></tr>
+          </table>
+
+          <!-- Items -->
+          <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:.75rem;">
+            {% for item in order.items %}
+            <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:.2rem 0;">
+              <span>{{ item.product_name }} ×{{ item.quantity }}</span>
+              <span>{{ item.subtotal | inr }}</span>
+            </div>
+            {% endfor %}
+            <div style="display:flex;justify-content:space-between;font-size:.88rem;font-weight:700;
+                        border-top:1px solid var(--border);margin-top:.4rem;padding-top:.4rem;">
+              <span>Total</span><span>{{ order.total | inr }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- API hint -->
+        <div class="chart-card" style="background:#0F172A;color:#94A3B8;">
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#475569;margin-bottom:.6rem;">
+            API Endpoint
+          </div>
+          <code style="font-size:.75rem;color:#7DD3FC;">
+            GET /api/order/{{ order.order_number }}
+          </code>
+          <div style="margin-top:.5rem;">
+            <code style="font-size:.72rem;color:#A3E635;">
+              POST /api/order/update-status
+            </code>
+          </div>
+          <div style="font-size:.7rem;color:#64748B;margin-top:.5rem;">
+            Returns full tracking JSON.
+            Auth required for POST.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Preset buttons populate the form fields
+const presets = {
+  confirmed:          { msg: 'Your order has been confirmed and payment verified.' },
+  processing:         { msg: 'Your order is being prepared by the seller.' },
+  packed:             { msg: 'Your order has been packed and is ready for pickup.' },
+  handed_to_courier:  { msg: 'Order handed to courier partner for delivery.', loc: 'Seller Warehouse' },
+  in_transit:         { msg: 'Package is in transit to your city.', loc: 'Sorting Hub' },
+  out_for_delivery:   { msg: 'Your package is out for delivery today.', loc: '' },
+  delivered:          { msg: 'Package delivered successfully. Thank you for shopping with us!' },
+  delivery_attempted: { msg: 'Delivery attempted. No one was available. Will retry tomorrow.' },
+};
+
+function applyPreset(status, label) {
+  const sel = document.getElementById('statusSelect');
+  const msg = document.getElementById('messageInput');
+  const loc = document.getElementById('locationInput');
+  if (sel) sel.value = status;
+  const p = presets[status] || {};
+  if (msg && !msg.value) msg.value = p.msg || label;
+  if (loc && p.loc) loc.value = p.loc;
+  // Set timestamp to now
+  const tsInput = document.querySelector('input[name="timestamp"]');
+  if (tsInput) {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    tsInput.value = now.toISOString().slice(0, 16);
+  }
+  sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Set datetime-local to now on page load
+window.addEventListener('load', () => {
+  const tsInput = document.querySelector('input[name="timestamp"]');
+  if (tsInput && !tsInput.value) {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    tsInput.value = now.toISOString().slice(0, 16);
+  }
+});
+</script>
+{% endblock %}

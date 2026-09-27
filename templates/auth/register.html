@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Create Account — {{ brand_name }}{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card" style="max-width:520px;">
+    <div class="auth-card__brand">
+      <div class="auth-card__logo">🧵 {{ brand_name }}</div>
+    </div>
+    <h1>Create your account</h1>
+    <p class="auth-card__sub">Join thousands of buyers and sellers on FabricBazaar</p>
+
+    <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.role.label(class='form-label') }}
+        {{ form.role(class='form-control') }}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem;">
+        <div class="form-group">
+          {{ form.first_name.label(class='form-label') }}
+          {{ form.first_name(class='form-control', placeholder='First name') }}
+          {% if form.first_name.errors %}<div style="color:var(--danger);font-size:.78rem;margin-top:.2rem;">{{ form.first_name.errors[0] }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          {{ form.last_name.label(class='form-label') }}
+          {{ form.last_name(class='form-control', placeholder='Last name') }}
+          {% if form.last_name.errors %}<div style="color:var(--danger);font-size:.78rem;margin-top:.2rem;">{{ form.last_name.errors[0] }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        {{ form.email.label(class='form-label') }}
+        {{ form.email(class='form-control', placeholder='you@example.com') }}
+        {% if form.email.errors %}<div style="color:var(--danger);font-size:.78rem;margin-top:.2rem;">{{ form.email.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem;">
+        <div class="form-group">
+          {{ form.password.label(class='form-label') }}
+          {{ form.password(class='form-control', placeholder='Min 8 characters') }}
+          {% if form.password.errors %}<div style="color:var(--danger);font-size:.78rem;margin-top:.2rem;">{{ form.password.errors[0] }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          {{ form.confirm.label(class='form-label') }}
+          {{ form.confirm(class='form-control', placeholder='Repeat password') }}
+          {% if form.confirm.errors %}<div style="color:var(--danger);font-size:.78rem;margin-top:.2rem;">{{ form.confirm.errors[0] }}</div>{% endif %}
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--full btn--lg" style="margin-top:.5rem;">
+        Create Account
+      </button>
+    </form>
+
+    <div class="auth-divider">already have an account?</div>
+    <div style="text-align:center;">
+      <a href="{{ url_for('auth.login') }}" class="btn btn--ghost btn--full">Sign In</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

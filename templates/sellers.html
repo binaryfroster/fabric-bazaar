@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}Browse Sellers — {{ brand_name }}{% endblock %}
+{% block meta_desc %}Discover verified fabric manufacturers, wholesalers and retailers across India on FabricBazaar.{% endblock %}
+
+{% block content %}
+
+<!-- Page header -->
+<div class="page-header">
+  <div class="container">
+    <h1>Fabric Sellers Directory</h1>
+    <p>Verified manufacturers, wholesalers and retailers across India</p>
+  </div>
+</div>
+
+<div class="container" style="padding-top:2rem;padding-bottom:3rem;">
+
+  <!-- Filter bar -->
+  <form method="get" class="filter-bar">
+    <div style="display:flex;align-items:center;gap:.5rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:.4rem .75rem;flex:1;max-width:320px;">
+      <i class="fas fa-search" style="color:var(--text-muted);font-size:.85rem;flex-shrink:0;"></i>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search sellers…"
+             style="border:none;background:transparent;outline:none;font-size:.875rem;width:100%;color:var(--text);">
+    </div>
+    <select name="type" class="form-control" style="max-width:190px;" onchange="this.form.submit()">
+      <option value="">All Business Types</option>
+      {% for bt in business_types %}
+      <option value="{{ bt }}" {% if btype == bt %}selected{% endif %}>{{ bt }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn--primary btn--sm">
+      <i class="fas fa-filter"></i> Filter
+    </button>
+    {% if q or btype %}
+      <a href="{{ url_for('main.sellers') }}" class="btn btn--ghost btn--sm">
+        <i class="fas fa-times"></i> Clear
+      </a>
+    {% endif %}
+    <span style="margin-left:auto;font-size:.8rem;color:var(--text-muted);white-space:nowrap;">
+      <strong style="color:var(--text-dark);">{{ companies.total }}</strong> seller{{ 's' if companies.total != 1 }}
+    </span>
+  </form>
+
+  {% if companies.items %}
+  <div class="seller-grid seller-grid--large">
+    {% for comp in companies.items %}
+    <a href="{{ url_for('main.seller_detail', slug=comp.slug) }}"
+       class="seller-card" aria-label="{{ comp.name }}">
+
+      <!-- Banner -->
+      <div class="seller-card__banner">
+        {% if comp.banner %}
+          <img src="{{ media_url(comp.banner, 'companies') }}"
+               alt="" loading="lazy">
+        {% else %}
+          <div class="seller-card__banner--default"
+               style="background:linear-gradient(135deg,
+               hsl({{ loop.index * 37 % 360 }},35%,28%),
+               hsl({{ (loop.index * 37 + 40) % 360 }},30%,38%));"></div>
+        {% endif %}
+        {% if comp.is_verified %}
+          <div class="seller-card__badge">✓ Verified</div>
+        {% endif %}
+        {% if comp.is_featured %}
+          <div class="seller-card__badge"
+               style="top:auto;bottom:.6rem;background:rgba(245,158,11,.9);color:#fff;border:none;">
+            ⭐ Featured
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Body -->
+      <div class="seller-card__body">
+        <!-- Logo -->
+        <div class="seller-card__logo">
+          {% if comp.logo %}
+            <img src="{{ media_url(comp.logo, 'companies') }}"
+                 alt="{{ comp.name }}" loading="lazy">
+          {% else %}
+            <div class="seller-card__logo-placeholder">{{ comp.name[0] }}</div>
+          {% endif %}
+        </div>
+
+        <h3 class="seller-card__name">{{ comp.name }}</h3>
+        {% if comp.tagline %}
+          <p class="seller-card__tagline">{{ comp.tagline }}</p>
+        {% endif %}
+
+        <div class="seller-card__meta">
+          {% if comp.city %}
+            <span><i class="fas fa-map-marker-alt"></i> {{ comp.city }}{% if comp.state %}, {{ comp.state }}{% endif %}</span>
+          {% endif %}
+          {% if comp.business_type %}
+            <span>{{ comp.business_type }}</span>
+          {% endif %}
+          <span><i class="fas fa-box" style="color:var(--secondary)"></i> {{ comp.product_count }} Products</span>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if companies.pages > 1 %}
+  <div class="pagination">
+    {% if companies.has_prev %}
+      <a href="?page={{ companies.prev_num }}&q={{ q }}&type={{ btype }}"
+         class="btn btn--outline btn--sm">← Prev</a>
+    {% endif %}
+    {% for page_num in companies.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if page_num %}
+        <a href="?page={{ page_num }}&q={{ q }}&type={{ btype }}"
+           class="btn btn--sm {{ 'btn--primary' if page_num == companies.page else 'btn--ghost' }}">
+          {{ page_num }}
+        </a>
+      {% else %}
+        <span style="padding:.4rem .3rem;color:var(--text-muted);">…</span>
+      {% endif %}
+    {% endfor %}
+    {% if companies.has_next %}
+      <a href="?page={{ companies.next_num }}&q={{ q }}&type={{ btype }}"
+         class="btn btn--outline btn--sm">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">🏭</div>
+    <h3>No sellers found</h3>
+    <p>Try a different search or clear your filters.</p>
+    {% if q or btype %}
+      <a href="{{ url_for('main.sellers') }}" class="btn btn--outline" style="margin-top:1rem;">
+        Clear filters
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- CTA -->
+  <div class="sell-cta" style="margin-top:3rem;">
+    <div class="sell-cta__inner">
+      <div>
+        <h2>Are you a Fabric Manufacturer or Seller?</h2>
+        <p>Register free and reach thousands of buyers across India.</p>
+      </div>
+      <a href="{{ url_for('auth.register') }}" class="btn btn--white btn--lg">
+        Register as Seller →
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% set comp = current_user.company %}
+<div class="sidebar-brand">
+  {% if comp and comp.logo %}
+    <img src="{{ media_url(comp.logo, 'companies') }}" class="sidebar-logo" loading="lazy" alt="{{ comp.name }}">
+  {% else %}
+    <div class="sidebar-logo-placeholder">{{ current_user.first_name[0] }}</div>
+  {% endif %}
+  <div style="min-width:0;">
+    <strong>{{ comp.name if comp else current_user.full_name }}</strong>
+    <small>
+      {% if comp and comp.is_verified %}
+        <span style="color:#4ADE80;">✓ Verified</span>
+      {% elif comp %}
+        <span style="color:#FCD34D;">⏳ Pending</span>
+      {% endif %}
+    </small>
+  </div>
+</div>
+<nav class="sidebar-nav">
+  <a href="{{ url_for('company.dashboard') }}" class="sidebar-nav__link {% if request.endpoint=='company.dashboard' %}active{% endif %}">
+    <i class="fas fa-tachometer-alt"></i> Dashboard
+  </a>
+  <div class="sidebar-section">STORE</div>
+  <a href="{{ url_for('company.view_profile') }}" class="sidebar-nav__link {% if request.endpoint=='company.view_profile' %}active{% endif %}">
+    <i class="fas fa-building"></i> Company Profile
+  </a>
+  <a href="{{ url_for('company.edit_profile') }}" class="sidebar-nav__link {% if request.endpoint=='company.edit_profile' %}active{% endif %}">
+    <i class="fas fa-edit"></i> Edit Profile
+  </a>
+  <div class="sidebar-section">PRODUCTS</div>
+  <a href="{{ url_for('company.products') }}" class="sidebar-nav__link {% if request.endpoint=='company.products' %}active{% endif %}">
+    <i class="fas fa-boxes"></i> My Products
+  </a>
+  <a href="{{ url_for('company.add_product') }}" class="sidebar-nav__link {% if request.endpoint=='company.add_product' %}active{% endif %}">
+    <i class="fas fa-plus"></i> Add Product
+  </a>
+  <div class="sidebar-section">SALES</div>
+  <a href="{{ url_for('company.orders') }}" class="sidebar-nav__link {% if request.endpoint=='company.orders' %}active{% endif %}">
+    <i class="fas fa-receipt"></i> Orders
+  </a>
+  <a href="{{ url_for('analytics.company_analytics') }}" class="sidebar-nav__link {% if 'analytics' in request.endpoint %}active{% endif %}">
+    <i class="fas fa-chart-line"></i> Analytics
+  </a>
+  <hr>
+  {% if comp %}
+  <a href="{{ url_for('main.seller_detail', slug=comp.slug) }}" class="sidebar-nav__link" target="_blank">
+    <i class="fas fa-eye"></i> Public Store
+  </a>
+  {% endif %}
+  <a href="{{ url_for('auth.logout') }}" class="sidebar-nav__link" style="color:var(--danger);">
+    <i class="fas fa-sign-out-alt"></i> Logout
+  </a>
+</nav>

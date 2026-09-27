@@ -1,0 +1,17 @@
+{# Reusable star display widget. Pass `rating` (float 0-5) and `count` (int) #}
+<div class="star-display">
+  {% set full = rating | int %}
+  {% set half = (rating - full) >= 0.4 %}
+  {% for i in range(1, 6) %}
+    {% if i <= full %}
+      <span class="star star--full">★</span>
+    {% elif half and i == full + 1 %}
+      <span class="star star--half">★</span>
+    {% else %}
+      <span class="star star--empty">★</span>
+    {% endif %}
+  {% endfor %}
+  {% if count is defined %}
+    <span class="star-count">({{ count }})</span>
+  {% endif %}
+</div>

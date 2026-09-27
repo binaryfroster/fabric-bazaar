@@ -1,0 +1,71 @@
+<div class="product-card">
+  <!-- Image -->
+  <a href="{{ url_for('shop.product_detail', slug=product.slug) }}" class="product-card__img-wrap">
+    {% if product.primary_image %}
+    <img src="{{ media_url(product.primary_image, 'products') }}"
+         alt="{{ product.name }}" class="product-card__img" loading="lazy">
+    {% else %}
+    <div class="product-card__img-placeholder">🧵</div>
+    {% endif %}
+
+    <!-- Badges -->
+    {% if not product.in_stock %}
+    <span class="product-badge product-badge--oos" style="background:var(--text-muted);color:#fff;">Out of Stock</span>
+    {% elif product.is_on_sale %}
+    <span class="product-badge product-badge--sale">-{{ product.discount_percent }}%</span>
+    {% elif product.is_new %}
+    <span class="product-badge product-badge--new">New</span>
+    {% elif product.is_bestseller %}
+    <span class="product-badge product-badge--hot">🔥 Best</span>
+    {% endif %}
+
+    <!-- Wishlist button -->
+    {% if current_user.is_authenticated and current_user.is_customer %}
+    {% endif %}
+  </a>
+
+  <!-- Body -->
+  <div class="product-card__body">
+    {% if product.company %}
+    <a href="{{ url_for('main.seller_detail', slug=product.company.slug) }}" class="product-card__seller">
+      {{ product.company.name }}{% if product.company.is_verified %} ✓{% endif %}
+    </a>
+    {% endif %}
+
+    <a href="{{ url_for('shop.product_detail', slug=product.slug) }}" class="product-card__name">
+      {{ product.name }}
+    </a>
+
+    {% if product.fabric_type %}
+    <div class="product-card__meta">
+      {{ product.fabric_type }}{% if product.material %} · {{ product.material }}{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Price -->
+    <div class="product-card__price" style="margin-top:.35rem;">
+      <span class="product-card__price--current">{{ product.display_price | inr }}</span>
+      {% if product.is_on_sale %}
+      <span class="product-card__price--original">{{ product.price | inr }}</span>
+      {% endif %}
+    </div>
+
+    {% if product.min_order_qty > 1 %}
+    <div class="product-card__moq">Min {{ product.min_order_qty }} pcs</div>
+    {% endif %}
+
+    <!-- Add to cart -->
+    {% if product.in_stock %}
+    <form action="{{ url_for('cart.add_to_cart', product_id=product.id) }}" method="POST"
+          class="product-card__add">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="quantity" value="1">
+      <button type="submit" class="btn btn--primary btn--sm btn--full">
+        <i class="fas fa-cart-plus"></i> Add to Cart
+      </button>
+    </form>
+    {% else %}
+    <button class="btn btn--muted btn--sm btn--full" disabled>Out of Stock</button>
+    {% endif %}
+  </div>
+</div>

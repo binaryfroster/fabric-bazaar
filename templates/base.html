@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2C4A3E">
+  <title>{% block title %}{{ brand_name }}{% endblock %} — India's Fabric Marketplace</title>
+  <meta name="description" content="{% block meta_desc %}FabricBazaar — India's trusted marketplace for premium fabrics, sarees, bed sheets, kurtas and textiles from verified sellers. Buy direct from weavers with pan-India delivery.{% endblock %}">
+  <meta name="keywords" content="{% block meta_keywords %}fabric marketplace India, buy sarees online, bed sheets, kurtas, Indian textiles, handloom, silk sarees, cotton fabric, verified sellers{% endblock %}">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{% block canonical %}{{ request.url }}{% endblock %}">
+
+  <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
+  <meta property="og:type"        content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title"       content="{% block og_title %}{{ self.title() }} — FabricBazaar{% endblock %}">
+  <meta property="og:description" content="{% block og_desc %}{{ self.meta_desc() }}{% endblock %}">
+  <meta property="og:image"       content="{% block og_image %}{{ url_for('static', filename='images/logo.png', _external=True) }}{% endblock %}">
+  <meta property="og:url"         content="{{ request.url }}">
+  <meta property="og:site_name"   content="FabricBazaar">
+  <meta property="og:locale"      content="en_IN">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="{{ self.og_title() }}">
+  <meta name="twitter:description" content="{{ self.og_desc() }}">
+  <meta name="twitter:image"       content="{{ self.og_image() }}">
+
+  <!-- Structured Data: Organisation -->
+  {% block structured_data %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "FabricBazaar",
+    "url": "{{ request.host_url }}",
+    "logo": "{{ url_for('static', filename='images/logo.png', _external=True) }}",
+    "description": "India's trusted marketplace for premium fabrics, sarees, and home textiles.",
+    "areaServed": "IN",
+    "sameAs": []
+  }
+  </script>
+  {% endblock %}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Announcement bar -->
+<div class="announcement-bar" aria-label="Announcements">
+  <div class="ticker-wrap">
+    <span class="ticker">
+      🚚 Free shipping on orders above ₹999 &nbsp;|&nbsp;
+      🧵 1000+ verified fabric sellers &nbsp;|&nbsp;
+      🎁 New arrivals daily &nbsp;|&nbsp;
+      🔒 Secure payments via Razorpay &nbsp;|&nbsp;
+      📦 Pan-India delivery &nbsp;|&nbsp;
+      ⭐ 4.8/5 rated marketplace &nbsp;|&nbsp;
+    </span>
+  </div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar" id="navbar" role="navigation" aria-label="Main navigation">
+
+  <!-- ── Desktop & Mobile Bar ─────────────────────────────────── -->
+  <div class="container navbar__inner">
+
+    <!-- Left: hamburger + logo -->
+    <div class="navbar__left">
+      <button class="hamburger" id="hamburgerBtn"
+              aria-label="Open navigation menu"
+              aria-expanded="false"
+              aria-controls="navDrawer">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+
+      <a href="{{ url_for('main.index') }}" class="navbar__brand" aria-label="{{ brand_name }} home">
+        <img src="{{ url_for('static', filename='images/logo.png') }}"
+             alt="{{ brand_name }}" class="navbar__logo-img"
+             onerror="this.style.display='none';document.getElementById('navLogoText').style.display='inline'" loading="lazy">
+        <span id="navLogoText" style="display:none;">{{ brand_name }}</span>
+      </a>
+    </div>
+
+    <!-- Centre: desktop search bar (hidden on mobile) -->
+    <div class="navbar__search">
+      <form action="{{ url_for('main.search') }}" method="get" class="search-form" role="search">
+        <input type="text" name="q"
+               placeholder="Search fabrics, sarees, sellers…"
+               value="{{ request.args.get('q','') }}"
+               class="search-input"
+               aria-label="Search products">
+        <button type="submit" class="search-btn" aria-label="Search">
+          <i class="fas fa-search" aria-hidden="true"></i>
+        </button>
+      </form>
+    </div>
+
+    <!-- Right column: desktop nav links + persistent action icons -->
+    <div class="navbar__right">
+
+      <!-- Desktop nav links — visible ≥ 769px, hidden on mobile (drawer handles it) -->
+      <nav class="navbar__nav" aria-label="Primary navigation">
+        <a href="{{ url_for('main.index') }}"
+           class="navbar__link {% if request.endpoint == 'main.index' %}navbar__link--active{% endif %}">Home</a>
+        <a href="{{ url_for('shop.index') }}"
+           class="navbar__link {% if request.endpoint and request.endpoint.startswith('shop.') %}navbar__link--active{% endif %}">Shop</a>
+        <a href="{{ url_for('main.sellers') }}"
+           class="navbar__link {% if request.endpoint == 'main.sellers' %}navbar__link--active{% endif %}">Sellers</a>
+        <a href="{{ url_for('tracking.track_search') }}"
+           class="navbar__link {% if request.endpoint and request.endpoint.startswith('tracking.') %}navbar__link--active{% endif %}">Track</a>
+        {% if current_user.is_authenticated %}
+          {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.dashboard') }}" class="navbar__link navbar__link--admin">
+              <i class="fas fa-cog" aria-hidden="true"></i> Admin
+            </a>
+          {% elif current_user.is_company %}
+            <a href="{{ url_for('company.dashboard') }}" class="navbar__link navbar__link--company">
+              <i class="fas fa-store" aria-hidden="true"></i> My Shop
+            </a>
+          {% elif current_user.is_delivery %}
+            <a href="{{ url_for('delivery.dashboard') }}" class="navbar__link navbar__link--delivery">
+              <i class="fas fa-motorcycle" aria-hidden="true"></i> Deliveries
+            </a>
+          {% endif %}
+        {% endif %}
+      </nav>
+
+      <!-- Visual separator between nav and icons (desktop only) -->
+      <div class="navbar__sep" aria-hidden="true"></div>
+
+      <!-- Action icons — always visible on every screen size -->
+      <div class="navbar__actions">
+
+        <!-- Search toggle — mobile only (desktop has the inline search bar) -->
+        <button class="navbar__icon-btn navbar__search-toggle" id="searchToggleBtn"
+                aria-label="Toggle search" aria-expanded="false" aria-controls="mobileSearchBar">
+          <i class="fas fa-search" aria-hidden="true"></i>
+        </button>
+
+        <!-- Messages badge — authenticated customers -->
+        {% if current_user.is_authenticated and current_user.is_customer %}
+        <a href="{{ url_for('messages.inbox') }}" class="navbar__icon-btn"
+           title="Messages" aria-label="Messages">
+          <i class="fas fa-comment-dots" aria-hidden="true"></i>
+          {% if unread_messages > 0 %}
+          <span class="nav-badge msg-badge-live" aria-label="{{ unread_messages }} unread">{{ unread_messages }}</span>
+          {% endif %}
+        </a>
+        {% endif %}
+
+        <!-- Cart — guests + customers (not company / admin) -->
+        {% if not current_user.is_company and not current_user.is_admin %}
+        <a href="{{ url_for('cart.view_cart') }}" class="navbar__cart"
+           title="Cart" aria-label="Shopping cart, {{ cart_count }} item{{ 's' if cart_count != 1 }}">
+          <i class="fas fa-cart-shopping" aria-hidden="true"></i>
+          {% if cart_count > 0 %}
+          <span class="cart-badge" id="cartBadge" aria-live="polite">{{ cart_count }}</span>
+          {% endif %}
+        </a>
+        {% endif %}
+
+        <!-- Desktop user dropdown (hidden on mobile — drawer shows account flat) -->
+        {% if current_user.is_authenticated %}
+        <div class="navbar__dropdown navbar__dropdown--desktop">
+          <button class="navbar__user-btn"
+                  aria-haspopup="true" aria-expanded="false"
+                  aria-label="Account menu for {{ current_user.first_name }}">
+            <i class="fas fa-user-circle" aria-hidden="true"></i>
+            <span class="navbar__user-name">{{ current_user.first_name }}</span>
+            <i class="fas fa-chevron-down navbar__user-chevron" aria-hidden="true"></i>
+          </button>
+          <div class="navbar__dropdown-menu" role="menu">
+            {% if current_user.is_company and current_user.company %}
+              <a href="{{ url_for('company.view_profile') }}" role="menuitem"><i class="fas fa-building"></i> Company Profile</a>
+              <a href="{{ url_for('company.products') }}"     role="menuitem"><i class="fas fa-boxes"></i> My Products</a>
+              <a href="{{ url_for('company.orders') }}"       role="menuitem"><i class="fas fa-receipt"></i> Orders</a>
+              <hr>
+            {% elif current_user.is_customer %}
+              <a href="{{ url_for('buyer.dashboard') }}"  role="menuitem"><i class="fas fa-user"></i> My Account</a>
+              <a href="{{ url_for('buyer.orders') }}"     role="menuitem"><i class="fas fa-box"></i> My Orders</a>
+              <a href="{{ url_for('buyer.loyalty') }}"    role="menuitem"><i class="fas fa-star"></i> Loyalty Points</a>
+              <a href="{{ url_for('messages.inbox') }}"   role="menuitem">
+                <i class="fas fa-comment-dots"></i> Messages
+                {% if unread_messages > 0 %}<span class="nav-badge nav-badge--sm">{{ unread_messages }}</span>{% endif %}
+              </a>
+              <hr>
+            {% elif current_user.is_delivery %}
+              <a href="{{ url_for('delivery.profile') }}"  role="menuitem"><i class="fas fa-id-card"></i> My Profile</a>
+              <a href="{{ url_for('delivery.orders') }}"   role="menuitem"><i class="fas fa-box"></i> My Deliveries</a>
+              <hr>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}" role="menuitem"><i class="fas fa-sign-out-alt"></i> Logout</a>
+          </div>
+        </div>
+        {% else %}
+        <!-- Desktop: login + register (hidden on mobile) -->
+        <div class="navbar__auth-desktop">
+          <a href="{{ url_for('auth.login') }}"    class="navbar__link navbar__link--login">Login</a>
+          <a href="{{ url_for('auth.register') }}" class="btn btn--primary btn--sm">Register</a>
+        </div>
+        {% endif %}
+
+      </div><!-- /.navbar__actions -->
+    </div><!-- /.navbar__right -->
+  </div><!-- /.navbar__inner -->
+
+  <!-- ── Mobile search bar (expands below the bar) ─────────────── -->
+  <div class="navbar__mobile-search" id="mobileSearchBar" aria-hidden="true">
+    <div class="container">
+      <form action="{{ url_for('main.search') }}" method="get" class="search-form" role="search">
+        <input type="text" name="q"
+               placeholder="Search fabrics, sarees, sellers…"
+               value="{{ request.args.get('q','') }}"
+               class="search-input" id="mobileSearchInput"
+               aria-label="Search products">
+        <button type="submit" class="search-btn" aria-label="Search">
+          <i class="fas fa-search"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+</nav>
+
+<!-- ── Nav drawer overlay (mobile backdrop) ──────────────────── -->
+<div class="nav-overlay" id="navOverlay" aria-hidden="true"></div>
+
+<!-- ── Mobile nav drawer ─────────────────────────────────────── -->
+<div class="nav-drawer" id="navDrawer"
+     role="dialog" aria-modal="true" aria-label="Navigation menu"
+     aria-hidden="true">
+
+  <!-- Drawer header -->
+  <div class="nav-drawer__head">
+    <a href="{{ url_for('main.index') }}" class="nav-drawer__brand">
+      <img src="{{ url_for('static', filename='images/logo.png') }}"
+           alt="{{ brand_name }}" class="nav-drawer__logo" loading="lazy"
+           onerror="this.style.display='none'">
+      <span class="nav-drawer__brand-name">{{ brand_name }}</span>
+    </a>
+    <button class="nav-drawer__close" id="navCloseBtn" aria-label="Close menu">
+      <i class="fas fa-times" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <!-- Drawer body: nav links -->
+  <nav class="nav-drawer__nav" aria-label="Mobile navigation">
+
+    <!-- Primary links -->
+    <a href="{{ url_for('main.index') }}"   class="nav-drawer__link">
+      <span class="nav-drawer__icon"><i class="fas fa-home"></i></span> Home
+    </a>
+    <a href="{{ url_for('shop.index') }}"   class="nav-drawer__link {% if request.endpoint and request.endpoint.startswith('shop.') %}nav-drawer__link--active{% endif %}">
+      <span class="nav-drawer__icon"><i class="fas fa-store"></i></span> Shop
+    </a>
+    <a href="{{ url_for('main.sellers') }}" class="nav-drawer__link">
+      <span class="nav-drawer__icon"><i class="fas fa-users"></i></span> Sellers
+    </a>
+    <a href="{{ url_for('tracking.track_search') }}" class="nav-drawer__link">
+      <span class="nav-drawer__icon"><i class="fas fa-truck"></i></span> Track Order
+    </a>
+
+    {% if current_user.is_authenticated %}
+
+      <!-- Role-specific link -->
+      {% if current_user.is_admin %}
+      <a href="{{ url_for('admin.dashboard') }}" class="nav-drawer__link nav-drawer__link--admin">
+        <span class="nav-drawer__icon"><i class="fas fa-cog"></i></span> Admin Panel
+      </a>
+      {% elif current_user.is_company %}
+      <a href="{{ url_for('company.dashboard') }}" class="nav-drawer__link nav-drawer__link--company">
+        <span class="nav-drawer__icon"><i class="fas fa-store"></i></span> My Shop
+      </a>
+      {% elif current_user.is_delivery %}
+      <a href="{{ url_for('delivery.dashboard') }}" class="nav-drawer__link nav-drawer__link--delivery">
+        <span class="nav-drawer__icon"><i class="fas fa-motorcycle"></i></span> My Deliveries
+      </a>
+      {% endif %}
+
+      <!-- Divider -->
+      <div class="nav-drawer__divider"></div>
+
+      <!-- Account section header -->
+      <div class="nav-drawer__section-label">My Account</div>
+
+      {% if current_user.is_company and current_user.company %}
+        <a href="{{ url_for('company.view_profile') }}" class="nav-drawer__link">
+          <span class="nav-drawer__icon"><i class="fas fa-building"></i></span> Company Profile
+        </a>
+        <a href="{{ url_for('company.products') }}" class="nav-drawer__link">
+          <span class="nav-drawer__icon"><i class="fas fa-boxes"></i></span> My Products
+        </a>
+        <a href="{{ url_for('company.orders') }}" class="nav-drawer__link">
+          <span class="nav-drawer__icon"><i class="fas fa-receipt"></i></span> Orders
+        </a>
+      {% elif current_user.is_customer %}
+        <a href="{{ url_for('buyer.dashboard') }}" class="nav-drawer__link">
+          <span class="nav-drawer__icon"><i class="fas fa-user"></i></span> My Account
+        </a>
+        <a href="{{ url_for('buyer.orders') }}" class="nav-drawer__link">
+          <span class="nav-drawer__icon"><i class="fas fa-box"></i></span> My Orders
+        </a>
+        <a href="{{ url_for('buyer.loyalty') }}" class="nav-drawer__link">
+          <span class="nav-drawer__icon"><i class="fas fa-star"></i></span> Loyalty Points
+        </a>
+        <a href="{{ url_for('messages.inbox') }}" class="nav-drawer__link">
+          <span class="nav-drawer__icon"><i class="fas fa-comment-dots"></i></span>
+          Messages
+          {% if unread_messages > 0 %}
+          <span class="nav-drawer__badge">{{ unread_messages }}</span>
+          {% endif %}
+        </a>
+      {% elif current_user.is_delivery %}
+        <a href="{{ url_for('delivery.profile') }}" class="nav-drawer__link">
+          <span class="nav-drawer__icon"><i class="fas fa-id-card"></i></span> My Profile
+        </a>
+      {% endif %}
+
+      <div class="nav-drawer__divider"></div>
+      <a href="{{ url_for('auth.logout') }}" class="nav-drawer__link nav-drawer__link--logout">
+        <span class="nav-drawer__icon"><i class="fas fa-sign-out-alt"></i></span> Logout
+      </a>
+
+    {% else %}
+
+      <div class="nav-drawer__divider"></div>
+      <a href="{{ url_for('auth.login') }}" class="nav-drawer__link">
+        <span class="nav-drawer__icon"><i class="fas fa-sign-in-alt"></i></span> Login
+      </a>
+      <a href="{{ url_for('auth.register') }}" class="nav-drawer__cta">
+        <i class="fas fa-user-plus" aria-hidden="true"></i> Create Account
+      </a>
+
+    {% endif %}
+  </nav>
+
+  <!-- Drawer footer -->
+  <div class="nav-drawer__foot">
+    <p>India's trusted fabric marketplace</p>
+  </div>
+
+</div><!-- /.nav-drawer -->
+
+
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container" role="alert" aria-live="polite">
+    {% for cat, msg in messages %}
+    <div class="flash flash--{{ cat }}">
+      <i class="fas fa-{% if cat=='success' %}check-circle{% elif cat=='danger' %}times-circle{% elif cat=='warning' %}exclamation-triangle{% else %}info-circle{% endif %}" aria-hidden="true"></i>
+      <span>{{ msg }}</span>
+      <button class="flash__close" onclick="this.parentElement.remove()" aria-label="Dismiss">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<!-- Footer -->
+<footer class="footer" role="contentinfo">
+  <div class="container">
+    <div class="footer__grid">
+      <div>
+        <div class="footer__brand">{{ brand_name }}</div>
+        <p class="footer__tagline">India's trusted marketplace for premium fabrics, sarees, and home textiles.</p>
+        <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+          {% for icon, url in [('facebook-f','#'),('instagram','#'),('twitter','#'),('whatsapp','#')] %}
+          <a href="{{ url }}" style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7);font-size:.85rem;transition:background .2s;flex-shrink:0;" aria-label="{{ icon }}">
+            <i class="fab fa-{{ icon }}" aria-hidden="true"></i>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      <div>
+        <h4 class="footer__heading">Shop</h4>
+        <a href="{{ url_for('shop.index') }}"   class="footer__link">All Products</a>
+        <a href="{{ url_for('main.sellers') }}" class="footer__link">Sellers</a>
+        <a href="{{ url_for('main.index') }}"   class="footer__link">New Arrivals</a>
+        <a href="{{ url_for('main.index') }}"   class="footer__link">Best Sellers</a>
+      </div>
+      <div>
+        <h4 class="footer__heading">Help</h4>
+        <a href="{{ url_for('tracking.track_search') }}" class="footer__link">Track Order</a>
+        <a href="{{ url_for('main.contact') }}"          class="footer__link">Contact Us</a>
+        <a href="{{ url_for('main.about') }}"            class="footer__link">About Us</a>
+        <a href="#"                                      class="footer__link">FAQs</a>
+      </div>
+      <div>
+        <h4 class="footer__heading">Account</h4>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('buyer.dashboard') }}" class="footer__link">My Account</a>
+        <a href="{{ url_for('buyer.orders') }}"    class="footer__link">My Orders</a>
+        {% else %}
+        <a href="{{ url_for('auth.register') }}"   class="footer__link">Register</a>
+        <a href="{{ url_for('auth.login') }}"      class="footer__link">Login</a>
+        {% endif %}
+        <a href="{{ url_for('auth.register') }}?role=company" class="footer__link">Sell on FabricBazaar</a>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <p>© {{ now.year if now is defined else 2025 }} {{ brand_name }} — Made with ❤️ in India</p>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <a href="#" class="footer__link" style="margin:0;">Privacy</a>
+        <a href="#" class="footer__link" style="margin:0;">Terms</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Core JS -->
+<script>
+/* ═══════════════════════════════════════════════════════════
+   FabricBazaar — Navbar Controller
+   Handles: drawer open/close, mobile search, desktop dropdown,
+            scroll-lock, focus-trap, keyboard nav, badge updates
+   ═══════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  /* ── Element refs ──────────────────────────────────────── */
+  const hamburger      = document.getElementById('hamburgerBtn');
+  const drawer         = document.getElementById('navDrawer');
+  const overlay        = document.getElementById('navOverlay');
+  const closeBtn       = document.getElementById('navCloseBtn');
+  const searchToggle   = document.getElementById('searchToggleBtn');
+  const mobileSearch   = document.getElementById('mobileSearchBar');
+  const mobileInput    = document.getElementById('mobileSearchInput');
+
+  /* ── Scroll-lock helpers ───────────────────────────────── */
+  let _scrollY = 0;
+
+  function lockScroll() {
+    _scrollY = window.scrollY;
+    document.body.classList.add('nav-is-open');
+    document.body.style.top = `-${_scrollY}px`;
+  }
+  function unlockScroll() {
+    document.body.classList.remove('nav-is-open');
+    document.body.style.top = '';
+    window.scrollTo(0, _scrollY);
+  }
+
+  /* ── Focus-trap inside drawer ──────────────────────────── */
+  const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function trapFocus(e) {
+    if (!drawer || !drawer.classList.contains('is-open')) return;
+    const nodes = Array.from(drawer.querySelectorAll(FOCUSABLE));
+    if (!nodes.length) return;
+    const first = nodes[0], last = nodes[nodes.length - 1];
+    if (e.key === 'Tab') {
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    }
+  }
+
+  /* ── Drawer open / close ───────────────────────────────── */
+  function openDrawer() {
+    if (!drawer) return;
+    lockScroll();
+    drawer.classList.add('is-open');
+    drawer.setAttribute('aria-hidden', 'false');
+    overlay.classList.add('is-visible');
+    overlay.setAttribute('aria-hidden', 'false');
+    hamburger.classList.add('is-active');
+    hamburger.setAttribute('aria-expanded', 'true');
+    hamburger.setAttribute('aria-label', 'Close navigation menu');
+    /* Focus first link after transition */
+    setTimeout(() => {
+      const first = drawer.querySelector(FOCUSABLE);
+      if (first) first.focus();
+    }, 340);
+    document.addEventListener('keydown', onKeyDown);
+  }
+
+  function closeDrawer() {
+    if (!drawer) return;
+    unlockScroll();
+    drawer.classList.remove('is-open');
+    drawer.setAttribute('aria-hidden', 'true');
+    overlay.classList.remove('is-visible');
+    overlay.setAttribute('aria-hidden', 'true');
+    hamburger.classList.remove('is-active');
+    hamburger.setAttribute('aria-expanded', 'false');
+    hamburger.setAttribute('aria-label', 'Open navigation menu');
+    hamburger.focus();   /* return focus to trigger */
+    document.removeEventListener('keydown', onKeyDown);
+  }
+
+  function toggleDrawer() {
+    drawer && drawer.classList.contains('is-open') ? closeDrawer() : openDrawer();
+  }
+
+  /* ── Mobile search open / close ────────────────────────── */
+  function openSearch() {
+    if (!mobileSearch) return;
+    mobileSearch.classList.add('is-open');
+    mobileSearch.setAttribute('aria-hidden', 'false');
+    searchToggle.classList.add('is-active');
+    searchToggle.setAttribute('aria-expanded', 'true');
+    setTimeout(() => { if (mobileInput) mobileInput.focus(); }, 260);
+  }
+
+  function closeSearch() {
+    if (!mobileSearch) return;
+    mobileSearch.classList.remove('is-open');
+    mobileSearch.setAttribute('aria-hidden', 'true');
+    searchToggle.classList.remove('is-active');
+    searchToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  /* ── Keyboard handler ──────────────────────────────────── */
+  function onKeyDown(e) {
+    if (e.key === 'Escape') { closeDrawer(); closeSearch(); }
+    if (e.key === 'Tab') trapFocus(e);
+  }
+
+  /* ── Event listeners ───────────────────────────────────── */
+  if (hamburger) hamburger.addEventListener('click', toggleDrawer);
+  if (closeBtn)  closeBtn.addEventListener('click', closeDrawer);
+  if (overlay)   overlay.addEventListener('click', closeDrawer);
+
+  if (searchToggle) {
+    searchToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      mobileSearch && mobileSearch.classList.contains('is-open')
+        ? closeSearch() : openSearch();
+    });
+  }
+
+  /* Close drawer when a drawer link is tapped on mobile */
+  if (drawer) {
+    drawer.querySelectorAll('.nav-drawer__link, .nav-drawer__cta').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.matchMedia('(max-width: 768px)').matches) closeDrawer();
+      });
+    });
+  }
+
+  /* Global Escape key (even when drawer not open, for search) */
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeSearch(); }
+  });
+
+  /* ── Desktop user dropdown ─────────────────────────────── */
+  document.querySelectorAll('.navbar__dropdown--desktop').forEach(dd => {
+    const btn  = dd.querySelector('.navbar__user-btn');
+    const menu = dd.querySelector('.navbar__dropdown-menu');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = dd.classList.toggle('is-open');
+      btn.setAttribute('aria-expanded', open);
+    });
+
+    /* Close on outside click */
+    document.addEventListener('click', () => {
+      dd.classList.remove('is-open');
+      btn.setAttribute('aria-expanded', 'false');
+    });
+
+    /* Keyboard: arrow keys navigate menu items */
+    menu.addEventListener('keydown', (e) => {
+      const items = Array.from(menu.querySelectorAll('a'));
+      const idx   = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); items[(idx + 1) % items.length]?.focus(); }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); items[(idx - 1 + items.length) % items.length]?.focus(); }
+      if (e.key === 'Escape')    { dd.classList.remove('is-open'); btn.focus(); }
+    });
+  });
+
+  /* ── Auto-dismiss flash messages ───────────────────────── */
+  document.querySelectorAll('.flash').forEach((f, i) => {
+    setTimeout(() => {
+      f.style.cssText += 'opacity:0;transform:translateX(40px);transition:all .3s;';
+      setTimeout(() => f.remove(), 300);
+    }, 4000 + i * 300);
+  });
+
+  /* ── Cart badge helper (called by other scripts) ────────── */
+  window.updateCartBadge = function (count) {
+    const badge = document.getElementById('cartBadge');
+    const cart  = document.querySelector('.navbar__cart');
+    if (!cart) return;
+    if (count > 0) {
+      if (badge) {
+        badge.textContent = count > 99 ? '99+' : count;
+      } else {
+        const b = document.createElement('span');
+        b.id = 'cartBadge';
+        b.className = 'cart-badge';
+        b.setAttribute('aria-live', 'polite');
+        b.textContent = count > 99 ? '99+' : count;
+        cart.appendChild(b);
+      }
+    } else if (badge) {
+      badge.remove();
+    }
+  };
+
+  /* ── Real-time message badge polling ───────────────────── */
+  {% if current_user.is_authenticated and (current_user.is_customer or current_user.is_company) %}
+  (function pollMessages() {
+    fetch('{{ url_for("messages.unread_count") }}')
+      .then(r => r.json())
+      .then(d => {
+        const n = d.count || 0;
+        document.querySelectorAll('.msg-badge-live').forEach(el => {
+          el.textContent = n;
+          el.style.display = n > 0 ? 'flex' : 'none';
+        });
+        /* Also update drawer badge */
+        document.querySelectorAll('.nav-drawer__badge').forEach(el => {
+          el.textContent = n;
+          el.style.display = n > 0 ? 'flex' : 'none';
+        });
+      })
+      .catch(() => {});
+    setTimeout(pollMessages, 30000);
+  })();
+  {% endif %}
+
+  /* ── Seller reply toggle (product reviews) ─────────────── */
+  window.toggleReplyForm = function (id) {
+    const el = document.getElementById('replyForm' + id);
+    if (el) el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  };
+
+  /* ── Qty steppers ──────────────────────────────────────── */
+  window.stepQty = function (btn, dir) {
+    const wrap  = btn.closest('.qty-control, .qty-control--sm, .qty-ctrl');
+    const input = wrap && wrap.querySelector('input[type=number]');
+    if (!input) return;
+    const max = parseInt(btn.dataset.max || 999);
+    const min = parseInt(input.min || 1);
+    const val = Math.min(max, Math.max(min, parseInt(input.value || 1) + dir));
+    input.value = val;
+    const form = input.closest('form');
+    if (form) setTimeout(() => form.submit(), 200);
+  };
+
+  /* ── Smooth scroll for anchor links ────────────────────── */
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const t = document.querySelector(a.getAttribute('href'));
+      if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+  });
+
+  /* ── Lazy-load image observer ───────────────────────────── */
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver((entries, o) => {
+      entries.forEach(en => {
+        if (en.isIntersecting) { en.target.classList.add('loaded'); o.unobserve(en.target); }
+      });
+    }, { rootMargin: '200px 0px' });
+    document.querySelectorAll('img[loading="lazy"]').forEach(img => obs.observe(img));
+  }
+
+})();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

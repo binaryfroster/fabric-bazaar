@@ -1,0 +1,88 @@
+{% extends 'delivery/base.html' %}
+{% block page_title %}Scan Order{% endblock %}
+{% block title %}Scan{% endblock %}
+{% block content %}
+<div class="page">
+  <div style="padding:1rem 1rem .5rem;">
+    <div style="font-size:1.1rem;font-weight:800;">Quick Lookup</div>
+    <div style="font-size:.82rem;color:var(--gray-400);">Search by order number</div>
+  </div>
+
+  <div style="padding:.5rem 1rem 1rem;">
+    <form method="POST" action="{{ url_for('delivery.scan') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div style="display:flex;gap:.5rem;">
+        <input type="text" name="q" value="{{ request.form.get('q','') }}"
+               class="" placeholder="e.g. DW-1234567890-AB12"
+               style="flex:1;padding:.85rem 1rem;border:2px solid var(--gray-200);border-radius:12px;
+                      font-size:.9rem;font-family:inherit;text-transform:uppercase;letter-spacing:.03em;
+                      outline:none;transition:border-color .2s;"
+               autofocus autocomplete="off"
+               onfocus="this.style.borderColor='var(--green)'"
+               onblur="this.style.borderColor='var(--gray-200)'"
+               required>
+        <button type="submit" class="btn btn--green" style="padding:.85rem 1.1rem;border-radius:12px;">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {% if result %}
+  {% set o = result.order %}
+  {% set a = result.assignment %}
+  <div style="margin:0 1rem;">
+    <div class="card">
+      <div style="background:var(--green);color:#fff;padding:.875rem 1rem;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-weight:800;">{{ o.order_number }}</div>
+        <span style="background:rgba(255,255,255,.2);border-radius:20px;padding:.2rem .6rem;font-size:.72rem;font-weight:700;">
+          {{ o.status.replace('_',' ').title() }}
+        </span>
+      </div>
+      <div style="padding:1rem;">
+        <div style="font-weight:700;font-size:.95rem;">{{ o.full_name }}</div>
+        <div style="font-size:.82rem;color:var(--gray-600);margin-top:.2rem;line-height:1.5;">
+          {{ o.address_line1 }}, {{ o.city }}, {{ o.postal_code }}
+        </div>
+        {% if o.phone %}
+        <a href="tel:{{ o.phone }}" style="display:inline-flex;align-items:center;gap:.3rem;margin-top:.5rem;font-size:.82rem;font-weight:600;color:var(--green);">
+          <i class="fas fa-phone"></i> {{ o.phone }}
+        </a>
+        {% endif %}
+        <div style="margin-top:.6rem;font-size:.78rem;color:var(--gray-400);">
+          {{ o.items.count() }} item{{ 's' if o.items.count()!=1 }} · {{ o.total | inr }}
+          {% if o.payment_status == 'paid' %}<span style="color:var(--green);font-weight:600;"> · ✓ Paid</span>{% endif %}
+        </div>
+      </div>
+      {% if a %}
+      <div style="padding:.75rem 1rem;border-top:1px solid var(--gray-200);">
+        <div style="font-size:.75rem;color:var(--gray-400);margin-bottom:.5rem;">Assigned to you</div>
+        <a href="{{ url_for('delivery.order_detail', assignment_id=a.id) }}"
+           class="btn btn--green btn--full btn--sm">
+          Open & Update →
+        </a>
+      </div>
+      {% else %}
+      <div style="padding:.75rem 1rem;border-top:1px solid var(--gray-200);font-size:.82rem;color:var(--gray-400);text-align:center;">
+        Not assigned to you
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Tips -->
+  {% if not result %}
+  <div style="margin:1.5rem 1rem 0;">
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:.6rem;">Tips</div>
+    <div style="background:#fff;border-radius:12px;padding:1rem;box-shadow:var(--shadow);">
+      <div style="font-size:.82rem;color:var(--gray-600);line-height:1.7;">
+        • Order numbers start with <strong>DW-</strong><br>
+        • Copy from your assignment notification<br>
+        • Case-insensitive — works in any case
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

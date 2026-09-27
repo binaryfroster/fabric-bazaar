@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}Delivery Partners — Admin{% endblock %}
+{% block extra_css %}
+<style>
+.dp-search-bar{background:var(--bg-card);border:1px solid var(--border-lt);border-radius:var(--radius);padding:1.1rem 1.25rem;margin-bottom:1.25rem;display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;}
+.dp-search-bar input[type=text]{flex:1;min-width:200px;padding:.6rem .875rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;font-family:inherit;}
+.dp-search-bar input[type=text]:focus{outline:none;border-color:var(--primary);}
+.dp-search-bar select{padding:.6rem .875rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;background:var(--bg-card);}
+.filter-pills{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.1rem;}
+.filter-pill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .875rem;border-radius:20px;font-size:.78rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text-muted);transition:all .15s;}
+.filter-pill.active,.filter-pill:hover{border-color:var(--primary);background:var(--primary-light);color:var(--primary);}
+.partner-card{background:var(--bg-card);border:1px solid var(--border-lt);border-radius:var(--radius);padding:1.1rem;position:relative;transition:box-shadow .2s;}
+.partner-card:hover{box-shadow:var(--shadow-md);}
+.partner-card__status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.partner-card--inactive{opacity:.6;}
+.partner-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;}
+.stat-chip{display:inline-flex;align-items:center;gap:.3rem;background:var(--bg-alt);border-radius:8px;padding:.3rem .65rem;font-size:.75rem;font-weight:600;color:var(--text-muted);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+
+    <div class="dashboard__topbar" style="flex-wrap:wrap;gap:.75rem;">
+      <div>
+        <h1>🏍️ Delivery Partners</h1>
+        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem;">
+          {{ total }} total · {{ active_cnt }} active · {{ avail_cnt }} available now · {{ busy_cnt }} on delivery
+        </div>
+      </div>
+      <a href="{{ url_for('auth.register') }}?role=delivery" class="btn btn--primary btn--sm">
+        <i class="fas fa-plus"></i> Add Partner
+      </a>
+    </div>
+
+    <!-- Search & Filters -->
+    <form method="GET" action="" class="dp-search-bar" id="searchForm">
+      <i class="fas fa-search" style="color:var(--text-muted);"></i>
+      <input type="text" name="q" value="{{ search }}"
+             placeholder="Search by name, email, area, vehicle number…"
+             oninput="debounceSubmit(this.form)">
+      <select name="status" onchange="this.form.submit()">
+        <option value="">All Status</option>
+        <option value="active"    {% if status_f=='active' %}selected{% endif %}>✅ Active</option>
+        <option value="inactive"  {% if status_f=='inactive' %}selected{% endif %}>⛔ Inactive</option>
+        <option value="available" {% if status_f=='available' %}selected{% endif %}>🟢 Available</option>
+        <option value="busy"      {% if status_f=='busy' %}selected{% endif %}>🟡 Busy</option>
+        <option value="offline"   {% if status_f=='offline' %}selected{% endif %}>⚫ Offline</option>
+      </select>
+      <select name="vehicle" onchange="this.form.submit()">
+        <option value="">All Vehicles</option>
+        {% for v in ['Bike','Scooter','Cycle','Car','Van'] %}
+        <option value="{{ v }}" {% if vehicle_f==v %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+      {% if search or status_f or vehicle_f %}
+      <a href="{{ url_for('admin.delivery_partners') }}" class="btn btn--ghost btn--sm">
+        <i class="fas fa-times"></i> Clear
+      </a>
+      {% endif %}
+    </form>
+
+    <!-- Results count -->
+    {% if search or status_f or vehicle_f %}
+    <div style="font-size:.83rem;color:var(--text-muted);margin-bottom:1rem;">
+      Showing {{ partners|length }} result{{ 's' if partners|length != 1 }}
+      {% if search %} for "<strong>{{ search }}</strong>"{% endif %}
+    </div>
+    {% endif %}
+
+    {% if partners %}
+    <div class="partner-grid">
+      {% for p in partners %}
+      <div class="partner-card {% if not p.is_active %}partner-card--inactive{% endif %}">
+
+        <!-- Header -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.875rem;">
+          <div style="display:flex;align-items:center;gap:.75rem;">
+            <div style="width:46px;height:46px;border-radius:50%;background:var(--secondary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;flex-shrink:0;">
+              {{ p.user.first_name[0] }}{{ p.user.last_name[0] }}
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:.92rem;">{{ p.user.full_name }}</div>
+              <div style="font-size:.74rem;color:var(--text-muted);">{{ p.user.email }}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.4rem;">
+            <div class="partner-card__status-dot" style="background:{{ '#10B981' if p.status=='available' else ('#F59E0B' if p.status=='busy' else '#6B7280') }};"></div>
+            <span style="font-size:.72rem;font-weight:600;color:var(--text-muted);">{{ p.status.title() }}</span>
+          </div>
+        </div>
+
+        <!-- Stats chips -->
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.875rem;">
+          <span class="stat-chip"><i class="fas fa-motorcycle"></i> {{ p.vehicle_type }}{% if p.vehicle_no %} · {{ p.vehicle_no }}{% endif %}</span>
+          {% if p.area %}<span class="stat-chip"><i class="fas fa-map-marker-alt"></i> {{ p.area }}</span>{% endif %}
+          {% if p.phone %}<span class="stat-chip"><i class="fas fa-phone"></i> {{ p.phone }}</span>{% endif %}
+        </div>
+
+        <!-- Metrics -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.875rem;">
+          <div style="text-align:center;background:var(--bg-alt);border-radius:8px;padding:.4rem;">
+            <div style="font-weight:800;font-size:1rem;">{{ p.total_deliveries }}</div>
+            <div style="font-size:.65rem;color:var(--text-muted);">Deliveries</div>
+          </div>
+          <div style="text-align:center;background:var(--bg-alt);border-radius:8px;padding:.4rem;">
+            <div style="font-weight:800;font-size:1rem;">{{ "%.1f"|format(p.rating or 0) }}⭐</div>
+            <div style="font-size:.65rem;color:var(--text-muted);">Rating</div>
+          </div>
+          <div style="text-align:center;background:var(--bg-alt);border-radius:8px;padding:.4rem;">
+            <div style="font-weight:800;font-size:1rem;">
+              {{ p.assignments | selectattr("status", "in", ["assigned","picked_up","out_for_delivery"]) | list | length }}
+            </div>
+            <div style="font-size:.65rem;color:var(--text-muted);">Active</div>
+          </div>
+        </div>
+
+        <!-- Active assignments -->
+        {% set active_assigns = p.assignments | selectattr("status", "in", ["assigned","picked_up","out_for_delivery"]) | list %}
+        {% if active_assigns %}
+        <div style="background:#FFF8E7;border:1px solid #F59E0B;border-radius:8px;padding:.5rem .75rem;margin-bottom:.75rem;font-size:.76rem;">
+          <strong>Active:</strong>
+          {% for a in active_assigns[:2] %}
+          <a href="{{ url_for('admin.orders') }}?q={{ a.order.order_number }}" style="color:var(--primary);">{{ a.order.order_number }}</a>{% if not loop.last %}, {% endif %}
+          {% endfor %}
+          {% if active_assigns|length > 2 %} +{{ active_assigns|length - 2 }} more{% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div style="display:flex;gap:.5rem;">
+          <form method="POST" action="{{ url_for('admin.toggle_delivery_partner', pid=p.id) }}" style="flex:1;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn--{{ 'danger' if p.is_active else 'success' }} btn--sm" style="width:100%;">
+              {% if p.is_active %}<i class="fas fa-ban"></i> Deactivate{% else %}<i class="fas fa-check"></i> Activate{% endif %}
+            </button>
+          </form>
+          {% if p.phone %}
+          <a href="tel:{{ p.phone }}" class="btn btn--outline btn--sm" title="Call rider">
+            <i class="fas fa-phone"></i>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div style="text-align:center;padding:4rem 2rem;color:var(--text-muted);">
+      <div style="font-size:3rem;margin-bottom:.75rem;">🏍️</div>
+      <h3 style="font-weight:700;">
+        {% if search or status_f or vehicle_f %}No riders match your search{% else %}No delivery partners yet{% endif %}
+      </h3>
+      {% if search or status_f or vehicle_f %}
+      <a href="{{ url_for('admin.delivery_partners') }}" class="btn btn--outline btn--sm" style="margin-top:1rem;">Clear Filters</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let searchTimer;
+function debounceSubmit(form) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => form.submit(), 450);
+}
+</script>
+{% endblock %}

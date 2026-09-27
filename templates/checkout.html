@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% block title %}Checkout — FabricBazaar{% endblock %}
+{% block extra_css %}
+<style>
+.checkout-wrap{display:grid;grid-template-columns:1fr 380px;gap:1.75rem;max-width:1100px;margin:0 auto;padding:2rem 1rem 4rem}
+@media(max-width:860px){.checkout-wrap{grid-template-columns:1fr}}
+.checkout-section{background:var(--bg-card);border:1px solid var(--border-lt);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.25rem;box-shadow:var(--shadow-sm)}
+.checkout-section h2{font-size:1rem;font-weight:700;color:var(--secondary);margin:0 0 1.1rem;padding-bottom:.65rem;border-bottom:1px solid var(--border-lt)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
+@media(max-width:540px){.form-row{grid-template-columns:1fr}}
+.form-group{margin-bottom:.875rem}
+.form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem;color:var(--secondary)}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;font-family:inherit;background:var(--bg-card);transition:border-color .15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--primary)}
+.form-group.has-error input,.form-group.has-error select{border-color:#EF4444}
+.form-error{font-size:.72rem;color:#EF4444;margin-top:.25rem;display:block}
+
+/* Payment method selector */
+.pay-methods{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.5rem}
+.pay-method{border:2px solid var(--border);border-radius:var(--radius-sm);padding:1rem;cursor:pointer;transition:all .2s;text-align:center;position:relative}
+.pay-method:hover{border-color:var(--primary)}
+.pay-method input[type=radio]{position:absolute;opacity:0;width:0;height:0}
+.pay-method.selected{border-color:var(--primary);background:var(--primary-light,#FFF3E8)}
+.pay-method__icon{font-size:1.75rem;margin-bottom:.35rem}
+.pay-method__title{font-size:.88rem;font-weight:700;color:var(--secondary)}
+.pay-method__sub{font-size:.72rem;color:var(--text-muted);margin-top:.15rem}
+.pay-method__check{position:absolute;top:.5rem;right:.5rem;width:18px;height:18px;border-radius:50%;background:var(--primary);color:#fff;font-size:.65rem;display:none;align-items:center;justify-content:center}
+.pay-method.selected .pay-method__check{display:flex}
+
+/* Order summary */
+.order-summary{position:sticky;top:80px}
+.summary-item{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--border-lt)}
+.summary-item:last-child{border-bottom:none}
+.summary-item img{width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border-lt)}
+.summary-totals{margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border-lt)}
+.summary-totals .row{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.4rem;color:var(--text-muted)}
+.summary-totals .row.total{font-size:1rem;font-weight:800;color:var(--secondary);border-top:1px solid var(--border-lt);padding-top:.65rem;margin-top:.4rem}
+.cod-badge{display:inline-flex;align-items:center;gap:.35rem;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:.4rem .875rem;font-size:.78rem;color:#166534;font-weight:600;margin-top:.5rem}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div style="padding:1.25rem 0 .5rem">
+    <a href="{{ url_for('cart.view_cart') }}" style="font-size:.83rem;color:var(--primary);">← Back to Cart</a>
+    <h1 style="font-size:1.4rem;font-weight:800;color:var(--secondary);margin:.4rem 0 0">Checkout</h1>
+  </div>
+
+  {% if form.errors %}
+  <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:var(--radius-sm);padding:.875rem 1rem;margin-bottom:1rem;font-size:.84rem;color:#991B1B">
+    <strong>Please fix the following:</strong>
+    <ul style="margin:.4rem 0 0;padding-left:1.1rem">
+      {% for field, errs in form.errors.items() %}{% for e in errs %}<li>{{ e }}</li>{% endfor %}{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="POST" id="checkoutForm">
+    {{ form.hidden_tag() }}
+    <input type="hidden" name="payment_method" id="paymentMethodInput" value="cod">
+
+    <div class="checkout-wrap">
+      <!-- Left column -->
+      <div>
+        <!-- Delivery details -->
+        <div class="checkout-section">
+          <h2>📦 Delivery Details</h2>
+          <div class="form-row">
+            <div class="form-group {% if form.first_name.errors %}has-error{% endif %}">
+              <label>First Name *</label>
+              {{ form.first_name(class='', placeholder='Amit') }}
+              {% for e in form.first_name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="form-group {% if form.last_name.errors %}has-error{% endif %}">
+              <label>Last Name *</label>
+              {{ form.last_name(class='', placeholder='Kumar') }}
+              {% for e in form.last_name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group {% if form.email.errors %}has-error{% endif %}">
+              <label>Email *</label>
+              {{ form.email(class='', placeholder='amit@example.com') }}
+              {% for e in form.email.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="form-group {% if form.phone.errors %}has-error{% endif %}">
+              <label>Phone *</label>
+              {{ form.phone(class='', placeholder='9876543210') }}
+              {% for e in form.phone.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+          </div>
+          <div class="form-group {% if form.address_line1.errors %}has-error{% endif %}">
+            <label>Address Line 1 *</label>
+            {{ form.address_line1(class='', placeholder='House no., Street name') }}
+            {% for e in form.address_line1.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label>Address Line 2 <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+            {{ form.address_line2(class='', placeholder='Landmark, Apartment') }}
+          </div>
+          <div class="form-row">
+            <div class="form-group {% if form.city.errors %}has-error{% endif %}">
+              <label>City *</label>
+              {{ form.city(class='', placeholder='Mumbai') }}
+              {% for e in form.city.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="form-group {% if form.postal_code.errors %}has-error{% endif %}">
+              <label>PIN Code *</label>
+              {{ form.postal_code(class='', placeholder='400001', maxlength='6', inputmode='numeric') }}
+              {% for e in form.postal_code.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+          </div>
+          <div class="form-group {% if form.state.errors %}has-error{% endif %}">
+            <label>State *</label>
+            {{ form.state(class='') }}
+            {% for e in form.state.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label>Order Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+            {{ form.notes(class='', rows='2', placeholder='Any special instructions...') }}
+          </div>
+        </div>
+
+        <!-- Payment method -->
+        <div class="checkout-section">
+          <h2>💳 Payment Method</h2>
+          <div class="pay-methods">
+            {% if config.PAYMENTS_ENABLED %}
+            <label class="pay-method" id="pm-online" onclick="selectPayment('online')">
+              <input type="radio" name="_pm" value="online">
+              <div class="pay-method__icon">💳</div>
+              <div class="pay-method__title">Pay Online</div>
+              <div class="pay-method__sub">UPI / Card / Net Banking</div>
+              <div class="pay-method__check">✓</div>
+            </label>
+            {% endif %}
+            <label class="pay-method selected" id="pm-cod" onclick="selectPayment('cod')">
+              <input type="radio" name="_pm" value="cod">
+              <div class="pay-method__icon">💵</div>
+              <div class="pay-method__title">Cash on Delivery</div>
+              <div class="pay-method__sub">Pay when you receive</div>
+              <div class="pay-method__check">✓</div>
+            </label>
+          </div>
+          <div id="codNote" style="display:block">
+            <div class="cod-badge">✅ Order will be confirmed. Pay cash to the delivery person.</div>
+          </div>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        {% set loyalty = current_user.loyalty %}
+        {% if loyalty and loyalty.points >= 100 %}
+        <div class="checkout-section">
+          <h2>⭐ Loyalty Points</h2>
+          <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+            <span style="font-size:.88rem">You have <strong>{{ loyalty.points }} points</strong> (₹{{ loyalty.rupee_value }} value)</span>
+            <a href="{{ url_for('buyer.loyalty') }}" class="btn btn--ghost btn--sm">View rewards →</a>
+          </div>
+        </div>
+        {% endif %}
+        {% endif %}
+      </div>
+
+      <!-- Right column — Order summary -->
+      <div class="order-summary">
+        <div class="checkout-section">
+          <h2>🛒 Your Order</h2>
+          {% for ci in cart_items %}
+          <div class="summary-item">
+            <img src="{{ media_url(ci.product.primary_image, 'products') }}"
+                 alt="{{ ci.product.name }}" loading="lazy">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.83rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ci.product.name }}</div>
+              <div style="font-size:.75rem;color:var(--text-muted)">Qty: {{ ci.quantity }}</div>
+            </div>
+            <div style="font-weight:700;font-size:.88rem;flex-shrink:0">{{ (ci.product.display_price * ci.quantity) | inr }}</div>
+          </div>
+          {% endfor %}
+          <div class="summary-totals">
+            <div class="row"><span>Subtotal</span><span>{{ subtotal | inr }}</span></div>
+            <div class="row"><span>Shipping</span><span>{% if shipping == 0 %}Free{% else %}{{ shipping | inr }}{% endif %}</span></div>
+            <div class="row"><span>GST (18%)</span><span>{{ tax | inr }}</span></div>
+            <div class="row total"><span>Total</span><span>{{ total | inr }}</span></div>
+          </div>
+          <button type="submit" class="btn btn--primary" style="width:100%;margin-top:1rem;font-size:.95rem;padding:.7rem" id="placeOrderBtn">
+            <i class="fas fa-lock" style="margin-right:.4rem"></i>
+            <span id="btnText">Place Order & Pay</span>
+          </button>
+          <div style="text-align:center;font-size:.72rem;color:var(--text-muted);margin-top:.65rem">
+            🔒 Secure checkout · Your data is protected
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+function selectPayment(method) {
+  document.getElementById('paymentMethodInput').value = method;
+  var online = document.getElementById('pm-online');
+  if (online) online.classList.toggle('selected', method === 'online');
+  document.getElementById('pm-cod').classList.toggle('selected', method === 'cod');
+  document.getElementById('codNote').style.display = method === 'cod' ? 'block' : 'none';
+  var btnText = document.getElementById('btnText');
+  if (btnText) btnText.textContent = method === 'cod' ? 'Place Order (Pay on Delivery)' : 'Place Order & Pay';
+}
+</script>
+{% endblock %}

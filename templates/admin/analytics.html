@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% block title %}Marketplace Analytics{% endblock %}
+{% block extra_css %}{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+
+    <div class="dashboard__topbar">
+      <h1>📊 Marketplace Analytics</h1>
+      <div class="period-tabs">
+        {% for p, label in [('7','7 days'),('30','30 days'),('90','3 months'),('365','1 year')] %}
+        <a href="?period={{ p }}"
+           class="btn btn--sm btn--{{ 'primary' if period==p else 'outline' }}">{{ label }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Top KPIs -->
+    <div class="kpi-grid kpi-grid--wide">
+      <div class="kpi-card kpi-card--primary">
+        <div class="kpi-card__icon">💰</div>
+        <div class="kpi-card__value">{{ kpis.total_revenue | inr }}</div>
+        <div class="kpi-card__label">Total GMV</div>
+        <div class="kpi-card__sub">{{ kpis.period_revenue | inr }} this period</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">🛒</div>
+        <div class="kpi-card__value">{{ kpis.total_orders }}</div>
+        <div class="kpi-card__label">Total Orders</div>
+        <div class="kpi-card__sub">{{ kpis.period_orders }} this period</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">💳</div>
+        <div class="kpi-card__value">{{ kpis.avg_order_value | round(0) | int | inr }}</div>
+        <div class="kpi-card__label">Avg Order Value</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">🏭</div>
+        <div class="kpi-card__value">{{ kpis.total_companies }}</div>
+        <div class="kpi-card__label">Verified Sellers</div>
+        {% if kpis.pending_sellers > 0 %}
+        <div class="kpi-card__sub kpi-card__sub--warn">{{ kpis.pending_sellers }} pending</div>
+        {% endif %}
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">📦</div>
+        <div class="kpi-card__value">{{ kpis.total_products }}</div>
+        <div class="kpi-card__label">Active Products</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">👥</div>
+        <div class="kpi-card__value">{{ kpis.total_customers }}</div>
+        <div class="kpi-card__label">Customers</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">👁️</div>
+        <div class="kpi-card__value">{{ kpis.total_views | int }}</div>
+        <div class="kpi-card__label">Total Product Views</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">⭐</div>
+        <div class="kpi-card__value">{{ "%.1f"|format(kpis.avg_marketplace_rating) }}</div>
+        <div class="kpi-card__label">Platform Avg Rating</div>
+        <div class="kpi-card__sub">{{ kpis.total_ratings }} total ratings</div>
+      </div>
+    </div>
+
+    <!-- Revenue Chart -->
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h3>Marketplace Revenue — Last {{ period }} Days</h3>
+      </div>
+      <canvas id="revenueChart" style="max-height:260px"></canvas>
+    </div>
+
+    <!-- Row: Order Status + Category Revenue -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-card__header"><h3>Orders by Status</h3></div>
+        <canvas id="statusChart" style="max-height:240px"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card__header"><h3>Revenue by Product Category</h3></div>
+        <canvas id="catChart" style="max-height:240px"></canvas>
+      </div>
+    </div>
+
+    <!-- Top Sellers Table -->
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h3>Top Sellers by Revenue</h3>
+        <a href="{{ url_for('admin.companies') }}" class="section__link">All Sellers →</a>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Revenue</th>
+            <th>Orders</th>
+            <th>Avg Rating</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in top_companies %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><strong>{{ c.name }}</strong></td>
+            <td>
+              {% if c.is_verified %}<span class="badge badge--success">✓</span>
+              {% else %}<span class="badge badge--warn">Pending</span>{% endif %}
+            </td>
+            <td><strong>{{ c.revenue | float | round(0) | int | inr }}</strong></td>
+            <td>{{ c.orders }}</td>
+            <td>
+              {% if c.avg_rating > 0 %}
+                {{ "%.1f"|format(c.avg_rating) }}
+                <span style="color:#F59E0B;">★</span>
+                <small>({{ c.rating_count }})</small>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <a href="{{ url_for('analytics.admin_company_analytics', company_id=c.id) }}"
+                 class="btn btn--xs btn--primary">📊 Analytics</a>
+              <a href="{{ url_for('admin.company_detail', cid=c.id) }}"
+                 class="btn btn--xs btn--outline">Manage</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">No data yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Top Products -->
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h3>Top Products by Revenue (All Time)</h3>
+        <a href="{{ url_for('admin.products') }}" class="section__link">All Products →</a>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Product</th><th>Seller</th><th>Units</th><th>Revenue</th></tr></thead>
+        <tbody>
+          {% for p in top_products_global %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>
+              {% if p.image %}
+              <img src="{{ media_url(p.image, 'products') }}"
+                   width="36" height="36" style="object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:.4rem;" loading="lazy">
+              {% endif %}
+              <strong>{{ p.name }}</strong>
+            </td>
+            <td>{{ p.company_name or '—' }}</td>
+            <td>{{ p.units | int }}</td>
+            <td><strong>{{ p.revenue | float | round(0) | int | inr }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Recent Ratings -->
+    {% if recent_ratings %}
+    <div class="chart-card">
+      <div class="chart-card__header"><h3>Recent Customer Ratings</h3></div>
+      <table class="data-table">
+        <thead><tr><th>Customer</th><th>Seller</th><th>Rating</th><th>Review</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for r in recent_ratings %}
+          <tr>
+            <td>{{ r.user.full_name }}</td>
+            <td><a href="{{ url_for('main.seller_detail', slug=r.company.slug) }}">{{ r.company.name }}</a></td>
+            <td>
+              {% for i in range(1,6) %}<span class="star {% if i <= r.rating %}star--full{% else %}star--empty{% endif %}" style="font-size:.9rem;">★</span>{% endfor %}
+              {{ r.rating }}/5
+            </td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              {{ r.review or r.title or '—' }}
+            </td>
+            <td>{{ r.created_at.strftime('%d %b') }}</td>
+            <td>
+              <span class="badge badge--{{ 'success' if r.is_approved else 'muted' }}">
+                {{ 'Shown' if r.is_approved else 'Hidden' }}
+              </span>
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('ratings.toggle_seller_rating', rid=r.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn--xs btn--ghost">{{ 'Hide' if r.is_approved else 'Show' }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Revenue chart
+const revData = {{ revenue_data | tojson }};
+new Chart(document.getElementById('revenueChart'), {
+  type: 'line',
+  data: {
+    labels: revData.map(d => d.date.slice(5)),
+    datasets: [{
+      label: 'Revenue (₹)',
+      data: revData.map(d => d.revenue),
+      borderColor: '#C8773A', backgroundColor: 'rgba(200,119,58,.12)',
+      fill: true, tension: 0.4, pointRadius: 2,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: { y: { ticks: { callback: v => '₹' + (v>=100000 ? (v/100000).toFixed(1)+'L' : v>=1000 ? (v/1000).toFixed(0)+'k' : v) } } }
+  }
+});
+
+// Status doughnut
+const sd = {{ status_data | tojson }};
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(sd).map(s => s.charAt(0).toUpperCase()+s.slice(1)),
+    datasets: [{ data: Object.values(sd),
+      backgroundColor: ['#F59E0B','#3B82F6','#8B5CF6','#06B6D4','#10B981','#EF4444','#9CA3AF'] }]
+  },
+  options: { plugins: { legend: { position: 'right' } }, cutout: '55%' }
+});
+
+// Category bar chart
+const catData = {{ cat_revenue | tojson }};
+new Chart(document.getElementById('catChart'), {
+  type: 'bar',
+  data: {
+    labels: catData.map(c => c[0].length > 14 ? c[0].slice(0,14)+'…' : c[0]),
+    datasets: [{ label: 'Revenue',
+      data: catData.map(c => c[1] || 0),
+      backgroundColor: '#2C4A3E', borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: { x: { ticks: { callback: v => '₹'+(v>=1000?(v/1000).toFixed(0)+'k':v) } } }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Edit {{ product.name }} — Admin{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+  <aside class="admin-sidebar">{% include 'admin/_sidebar.html' %}</aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Edit Product</h1>
+      <div>
+        <a href="{{ url_for('shop.product_detail', slug=product.slug) }}" target="_blank" class="btn btn--outline btn--sm">View →</a>
+        <a href="{{ url_for('admin.products') }}" class="btn btn--outline btn--sm">← Products</a>
+      </div>
+    </div>
+
+    <!-- Current images preview -->
+    {% set images = product.get_images() %}
+    {% if images %}
+    <div class="admin-panel admin-images-preview">
+      <h3>Current Images</h3>
+      <div class="admin-img-row">
+        {% for img in images %}
+          {% if img != 'placeholder.jpg' %}
+          <div class="admin-img-thumb">
+            <img src="{{ media_url(img, 'products') }}" alt="" loading="lazy">
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <p class="admin-note">Upload new images below to replace the current ones.</p>
+    </div>
+    {% endif %}
+
+    <div class="admin-panel">
+      <form action="{{ url_for('admin.edit_product', product_id=product.id) }}" method="post" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        {% include 'admin/_product_form.html' %}
+        <div class="form-actions">
+          {{ form.submit(class='btn btn--primary') }}
+          <a href="{{ url_for('admin.products') }}" class="btn btn--ghost">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}

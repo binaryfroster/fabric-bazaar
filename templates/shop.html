@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% block title %}Shop Fabrics & Clothing — FabricBazaar{% endblock %}
+{% block extra_css %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="shop-wrap">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────────── -->
+    <aside class="shop-sidebar" id="shopSidebar">
+      <div class="sidebar-header">
+        <h3><i class="fas fa-sliders-h" style="margin-right:.4rem"></i>Filters</h3>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          {% if selected_fabric or selected_material or selected_color or selected_company or min_price or max_price %}
+          <a href="{{ url_for('shop.index') }}{% if search_query %}?q={{ search_query }}{% endif %}">✕ Clear all</a>
+          {% endif %}
+          <button class="sidebar-close" id="closeSidebar" aria-label="Close filters">✕</button>
+        </div>
+      </div>
+      <form method="get" id="filterForm">
+        {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+
+        <!-- Category -->
+        <div class="filter-section">
+          <p class="filter-section__title">Category</p>
+          <div class="cat-pills">
+            {% set cat_icons = {
+              'Sarees': '🥻', 'Bed Sheets': '🛏️',
+              'Kurtas & Kurtis': '👗', 'Fabrics & Cloth': '🧵',
+              'Home Textiles': '🏠', 'Dhooties': '👘',
+              'Suits': '🧥', 'Lehengas': '💃'
+            } %}
+            {% for cat in fabric_categories %}
+            <label class="cat-pill {% if selected_fabric == cat %}active{% endif %}">
+              <input type="radio" name="fabric" value="{{ cat }}"
+                     {% if selected_fabric == cat %}checked{% endif %}
+                     onchange="filterForm.submit()">
+              <span class="cat-pill__icon">{{ cat_icons.get(cat, '🧶') }}</span>
+              <span class="cat-pill__label">{{ cat }}</span>
+              <span class="cat-pill__check">✓</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Material -->
+        <div class="filter-section">
+          <p class="filter-section__title">Material</p>
+          <select name="material" class="filter-select" onchange="filterForm.submit()">
+            <option value="">All Materials</option>
+            {% for m in materials %}
+            <option value="{{ m }}" {% if selected_material == m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Color swatches -->
+        <div class="filter-section">
+          <p class="filter-section__title">Colour{% if selected_color %} — <strong style="color:var(--primary)">{{ selected_color }}</strong>{% endif %}</p>
+          {# Spectrum order: whites → yellows → oranges/reds → pinks → purples → blues → greens → neutrals → dark → multi #}
+          {% set swatch_order = ['White','Ivory','Cream','Yellow','Gold','Orange','Peach','Red','Maroon','Pink','Purple','Blue','Navy','Teal','Green','Brown','Grey','Black','Multicolor'] %}
+          {% set swatch_map = {
+            'White':      '#F9F9F9',
+            'Ivory':      '#FFFFF0',
+            'Cream':      '#FFF8DC',
+            'Yellow':     '#EAB308',
+            'Gold':       '#D4A017',
+            'Orange':     '#EA580C',
+            'Peach':      '#FFCBA4',
+            'Red':        '#DC2626',
+            'Maroon':     '#800000',
+            'Pink':       '#EC4899',
+            'Purple':     '#9333EA',
+            'Blue':       '#2563EB',
+            'Navy':       '#1E3A5F',
+            'Teal':       '#0D9488',
+            'Green':      '#16A34A',
+            'Brown':      '#92400E',
+            'Grey':       '#9CA3AF',
+            'Black':      '#1a1a1a',
+            'Multicolor': 'multi'
+          } %}
+          {# Sort available colors by spectrum order, unrecognised ones appended at end #}
+          {% set sorted_colors = [] %}
+          {% for name in swatch_order %}
+            {% if name in colors %}{% set _ = sorted_colors.append(name) %}{% endif %}
+          {% endfor %}
+          {% for c in colors %}
+            {% if c not in sorted_colors %}{% set _ = sorted_colors.append(c) %}{% endif %}
+          {% endfor %}
+          <div class="color-swatches">
+            {% for c in sorted_colors %}
+            <label class="color-swatch {% if selected_color == c %}active{% endif %} {% if swatch_map.get(c) == 'multi' %}color-swatch--multi{% endif %}"
+                   title="{{ c }}"
+                   style="{% if swatch_map.get(c) and swatch_map.get(c) != 'multi' %}background:{{ swatch_map[c] }};{% endif %}
+                          {% if c in ['White','Ivory','Cream'] %}border:2px solid #ddd;{% endif %}">
+              <input type="radio" name="color" value="{{ c }}"
+                     {% if selected_color == c %}checked{% endif %}
+                     onchange="filterForm.submit()">
+            </label>
+            {% endfor %}
+          </div>
+          {% if selected_color %}
+          <button type="button" onclick="clearFilter('color')"
+                  style="margin-top:.5rem;font-size:.72rem;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">
+            Clear colour
+          </button>
+          {% endif %}
+        </div>
+
+        <!-- Seller -->
+        <div class="filter-section">
+          <p class="filter-section__title">Seller</p>
+          <select name="company" class="filter-select" onchange="filterForm.submit()">
+            <option value="">All Sellers</option>
+            {% for comp in companies %}
+            <option value="{{ comp.slug }}" {% if selected_company == comp.slug %}selected{% endif %}>
+              {{ comp.name }}{% if comp.is_verified %} ✓{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Price range -->
+        <div class="filter-section">
+          <p class="filter-section__title">Price Range (₹)</p>
+          <div class="price-inputs">
+            <input type="number" name="min_price" placeholder="Min" value="{{ min_price }}" min="0">
+            <span>—</span>
+            <input type="number" name="max_price" placeholder="Max" value="{{ max_price }}" min="0">
+          </div>
+          <button type="submit" class="btn btn--primary btn--sm" style="width:100%;margin-top:.65rem;">
+            Apply Price
+          </button>
+        </div>
+
+      </form>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ── Main content ─────────────────────────────────────────────── -->
+    <div class="shop-main">
+
+      <!-- Toolbar -->
+      <div class="shop-toolbar">
+        <div class="toolbar-left">
+          <button class="toolbar-filter-btn" id="openSidebar">
+            <i class="fas fa-filter"></i> Filter
+            {% if selected_fabric or selected_material or selected_color or selected_company or min_price or max_price %}
+            <span style="background:var(--primary);color:#fff;border-radius:50%;width:16px;height:16px;font-size:.6rem;display:inline-flex;align-items:center;justify-content:center;">
+              {{ [selected_fabric, selected_material, selected_color, selected_company, min_price, max_price] | select | list | length }}
+            </span>
+            {% endif %}
+          </button>
+          <span class="shop-count">{{ pagination.total if pagination else 0 }} products</span>
+          {% if search_query %}
+          <span class="search-tag">🔍 "{{ search_query }}" <a href="{{ url_for('shop.index') }}">✕</a></span>
+          {% endif %}
+          {% if selected_fabric %}
+          <span class="filter-tag">{{ selected_fabric }} <a href="#" onclick="clearFilter('fabric')">✕</a></span>
+          {% endif %}
+          {% if selected_color %}
+          <span class="filter-tag">{{ selected_color }} <a href="#" onclick="clearFilter('color')">✕</a></span>
+          {% endif %}
+        </div>
+        <div class="toolbar-sort">
+          <select onchange="window.location.href=this.value">
+            {% set qs = '&fabric='~selected_fabric~'&material='~selected_material~'&color='~selected_color~'&company='~selected_company %}
+            {% set base = url_for('shop.index') %}
+            <option value="{{ base }}?sort=newest{{ qs }}"    {% if sort_by=='newest' %}selected{% endif %}>Newest First</option>
+            <option value="{{ base }}?sort=price_asc{{ qs }}" {% if sort_by=='price_asc' %}selected{% endif %}>Price: Low → High</option>
+            <option value="{{ base }}?sort=price_desc{{ qs }}"{% if sort_by=='price_desc' %}selected{% endif %}>Price: High → Low</option>
+            <option value="{{ base }}?sort=popular{{ qs }}"   {% if sort_by=='popular' %}selected{% endif %}>Most Popular</option>
+            <option value="{{ base }}?sort=featured{{ qs }}"  {% if sort_by=='featured' %}selected{% endif %}>Featured</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Products -->
+      {% if products and products|length > 0 %}
+      <div class="product-grid">
+        {% for product in products %}{% include '_product_card.html' %}{% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:4rem 2rem;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:.75rem;">🔍</div>
+        <h3 style="font-weight:700;margin-bottom:.5rem;">No products found</h3>
+        <p style="color:var(--text-muted);">Try adjusting your filters or
+          <a href="{{ url_for('shop.index') }}" style="color:var(--primary)">browse all products</a>.
+        </p>
+      </div>
+      {% endif %}
+
+      <!-- Pagination -->
+      {% if pagination and pagination.pages > 1 %}
+      <div class="pagination" style="display:flex;gap:.4rem;justify-content:center;margin-top:2rem;flex-wrap:wrap;">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('shop.index', page=pagination.prev_num, fabric=selected_fabric, material=selected_material, color=selected_color, sort=sort_by, company=selected_company) }}"
+           class="btn btn--outline btn--sm">← Prev</a>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=1, right_current=2) %}
+          {% if p %}
+          <a href="{{ url_for('shop.index', page=p, fabric=selected_fabric, material=selected_material, color=selected_color, sort=sort_by, company=selected_company) }}"
+             class="btn btn--outline btn--sm {% if p == pagination.page %}btn--primary{% endif %}">{{ p }}</a>
+          {% else %}
+          <span style="padding:.3rem .5rem;color:var(--text-muted);">…</span>
+          {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <a href="{{ url_for('shop.index', page=pagination.next_num, fabric=selected_fabric, material=selected_material, color=selected_color, sort=sort_by, company=selected_company) }}"
+           class="btn btn--outline btn--sm">Next →</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div><!-- .shop-main -->
+  </div><!-- .shop-wrap -->
+</div><!-- .container -->
+
+<script>
+const sidebar  = document.getElementById('shopSidebar');
+const overlay  = document.getElementById('sidebarOverlay');
+const openBtn  = document.getElementById('openSidebar');
+const closeBtn = document.getElementById('closeSidebar');
+
+if (openBtn)  openBtn.onclick  = () => { sidebar.classList.add('open');  overlay.classList.add('show'); };
+if (closeBtn) closeBtn.onclick = () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); };
+if (overlay)  overlay.onclick  = () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); };
+
+function clearFilter(name) {
+  const url = new URL(window.location);
+  url.searchParams.delete(name);
+  window.location.href = url.toString();
+}
+</script>
+{% endblock %}

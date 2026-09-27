@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% block title %}Analytics — {{ comp.name }}{% endblock %}
+{% block extra_css %}{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'company/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+
+    <div class="dashboard__topbar">
+      <h1>📊 Analytics</h1>
+      <!-- Period Selector -->
+      <div class="period-tabs">
+        {% for p, label in [('7','7 days'),('30','30 days'),('90','3 months'),('365','1 year')] %}
+        <a href="?period={{ p }}"
+           class="btn btn--sm btn--{{ 'primary' if period==p else 'outline' }}">{{ label }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if not comp.is_verified %}
+    <div class="alert alert--warning">⏳ Your store is pending approval. Analytics will populate once you start receiving orders.</div>
+    {% endif %}
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-card__icon">💰</div>
+        <div class="kpi-card__value">{{ summary.total_revenue | inr }}</div>
+        <div class="kpi-card__label">Total Revenue</div>
+        {% if summary.rev_change is not none %}
+        <div class="kpi-card__trend {{ 'trend--up' if summary.rev_change >= 0 else 'trend--down' }}">
+          {{ '▲' if summary.rev_change >= 0 else '▼' }} {{ summary.rev_change | abs }}% vs last month
+        </div>
+        {% endif %}
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">📦</div>
+        <div class="kpi-card__value">{{ summary.order_count }}</div>
+        <div class="kpi-card__label">Total Orders</div>
+        <div class="kpi-card__sub">Avg ₹{{ summary.avg_order | round(0) | int }} per order</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">🏷️</div>
+        <div class="kpi-card__value">{{ summary.units_sold }}</div>
+        <div class="kpi-card__label">Units Sold</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">👁️</div>
+        <div class="kpi-card__value">{{ summary.total_views | int }}</div>
+        <div class="kpi-card__label">Product Views</div>
+        <div class="kpi-card__sub">{{ summary.conversion }}% conversion</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card__icon">⭐</div>
+        <div class="kpi-card__value">{{ summary.avg_rating or '—' }}</div>
+        <div class="kpi-card__label">Avg Seller Rating</div>
+        <div class="kpi-card__sub">{{ summary.rating_count }} reviews</div>
+      </div>
+      <div class="kpi-card {{ 'kpi-card--warn' if summary.out_of_stock > 0 }}">
+        <div class="kpi-card__icon">📋</div>
+        <div class="kpi-card__value">{{ summary.active_products }}</div>
+        <div class="kpi-card__label">Active Products</div>
+        {% if summary.out_of_stock > 0 %}
+        <div class="kpi-card__sub kpi-card__sub--warn">{{ summary.out_of_stock }} out of stock</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Revenue Chart -->
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h3>Revenue (last {{ period }} days)</h3>
+        <span class="chart-total">{{ summary.period_revenue if summary.period_revenue is defined else '' | inr }}</span>
+      </div>
+      <canvas id="revenueChart" height="80"></canvas>
+    </div>
+
+    <!-- Two Column: Order Status + Rating Distribution -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <div class="chart-card__header"><h3>Orders by Status</h3></div>
+        <canvas id="statusChart" height="160"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card__header"><h3>Rating Distribution</h3></div>
+        {% if summary.rating_count > 0 %}
+        <canvas id="ratingChart" height="160"></canvas>
+        {% else %}
+        <div class="empty-state" style="padding:2rem;"><p>No ratings yet</p></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Product Performance Table -->
+    <div class="chart-card">
+      <div class="chart-card__header">
+        <h3>Product Performance</h3>
+        <a href="{{ url_for('company.products') }}" class="section__link">Manage →</a>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product</th>
+            <th>Views</th>
+            <th>Units Sold</th>
+            <th>Revenue</th>
+            <th>Avg Review</th>
+            <th>Stock</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in product_stats %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>
+              {% if p.image %}
+              <img src="{{ media_url(p.image, 'products') }}"
+                   width="36" height="36" style="object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:.4rem;" loading="lazy">
+              {% endif %}
+              <strong>{{ p.name }}</strong>
+            </td>
+            <td>{{ p.view_count | int }}</td>
+            <td>{{ p.units_sold | int }}</td>
+            <td><strong>{{ p.revenue | float | round(0) | int | inr }}</strong></td>
+            <td>
+              {% if p.avg_review > 0 %}
+                {% for i in range(1,6) %}
+                  <span class="star {% if i <= p.avg_review|int %}star--full{% else %}star--empty{% endif %}" style="font-size:.9rem;">★</span>
+                {% endfor %}
+                <small>{{ "%.1f"|format(p.avg_review) }} ({{ p.review_count }})</small>
+              {% else %}—{% endif %}
+            </td>
+            <td {% if p.stock == 0 %}style="color:var(--danger);font-weight:700;"{% endif %}>{{ p.stock }}</td>
+            <td>
+              <span class="badge badge--{{ 'success' if p.is_active else 'muted' }}">
+                {{ 'Live' if p.is_active else 'Hidden' }}
+              </span>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted);">No products yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Recent Ratings -->
+    {% if recent_ratings %}
+    <div class="chart-card">
+      <div class="chart-card__header"><h3>Recent Customer Ratings</h3></div>
+      {% for r in recent_ratings %}
+      <div class="review-card review-card--compact">
+        <div class="review-card__header">
+          <div class="review-card__user">
+            <div class="review-avatar review-avatar--sm">{{ r.user.first_name[0] }}</div>
+            <div>
+              <strong>{{ r.user.first_name }} {{ r.user.last_name[0] }}.</strong>
+              {% if r.is_verified_purchase %}<span class="badge badge--success" style="font-size:.65rem;">✓</span>{% endif %}
+              <div style="font-size:.72rem;color:var(--text-muted);">{{ r.created_at.strftime('%d %b %Y') }}</div>
+            </div>
+          </div>
+          <div>
+            {% for i in range(1,6) %}<span class="star {% if i <= r.rating %}star--full{% else %}star--empty{% endif %}">★</span>{% endfor %}
+          </div>
+        </div>
+        {% if r.title %}<div class="review-title">{{ r.title }}</div>{% endif %}
+        {% if r.review %}<p class="review-text">{{ r.review }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const revData = {{ revenue_data | tojson }};
+const labels  = revData.map(d => d.date.slice(5)); // MM-DD
+const values  = revData.map(d => d.revenue);
+
+new Chart(document.getElementById('revenueChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Revenue (₹)',
+      data: values,
+      borderColor: '#C8773A',
+      backgroundColor: 'rgba(200,119,58,.1)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 3,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { ticks: { callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
+    },
+    responsive: true,
+  }
+});
+
+const sd = {{ status_data | tojson }};
+const statusLabels = Object.keys(sd).map(s => s.charAt(0).toUpperCase() + s.slice(1));
+const statusColors = {
+  'Pending':'#F59E0B','Confirmed':'#3B82F6','Processing':'#8B5CF6',
+  'Shipped':'#06B6D4','Delivered':'#10B981','Cancelled':'#EF4444','Refunded':'#6B7280'
+};
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: statusLabels,
+    datasets: [{ data: Object.values(sd),
+      backgroundColor: statusLabels.map(l => statusColors[l] || '#999') }]
+  },
+  options: { plugins: { legend: { position: 'right' } }, cutout: '60%' }
+});
+
+{% if summary.rating_count > 0 %}
+const rd = {{ rat_dist | tojson }};
+new Chart(document.getElementById('ratingChart'), {
+  type: 'bar',
+  data: {
+    labels: ['1★','2★','3★','4★','5★'],
+    datasets: [{ data: [rd['1']||0, rd['2']||0, rd['3']||0, rd['4']||0, rd['5']||0],
+      backgroundColor: ['#EF4444','#F97316','#F59E0B','#84CC16','#10B981'] }]
+  },
+  options: { plugins: { legend: { display: false } },
+    scales: { y: { ticks: { stepSize: 1 } } } }
+});
+{% endif %}
+</script>
+{% endblock %}

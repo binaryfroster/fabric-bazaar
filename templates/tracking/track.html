@@ -1,0 +1,531 @@
+{% extends 'base.html' %}
+{% block title %}Track Order {{ order.order_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Page layout ─────────────────────────────────────────────────── */
+.track-page {
+  background: #F7F4F0;
+  min-height: 90vh;
+  padding: 2rem 1rem 4rem;
+}
+.track-container {
+  max-width: 860px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 700px) {
+  .track-container { grid-template-columns: 1fr; }
+}
+
+/* ── Header card ─────────────────────────────────────────────────── */
+.track-header-card {
+  background: linear-gradient(135deg, #2C4A3E, #3d6b5c);
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  color: #fff;
+  margin-bottom: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+.track-header-card::after {
+  content: '';
+  position: absolute; right: -30px; top: -30px;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+}
+.track-header-card__order {
+  font-size: .75rem; letter-spacing: .15em;
+  text-transform: uppercase; color: rgba(255,255,255,.6);
+  margin-bottom: .3rem;
+}
+.track-header-card__title {
+  font-size: 1.5rem; font-weight: 800; margin-bottom: .2rem;
+}
+.track-header-card__sub {
+  font-size: .83rem; color: rgba(255,255,255,.65);
+}
+.track-status-badge {
+  display: inline-flex; align-items: center; gap: .45rem;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 20px;
+  padding: .3rem .9rem;
+  font-size: .8rem; font-weight: 600;
+  margin-top: .75rem;
+}
+.track-header-card--negative {
+  background: linear-gradient(135deg, #7f1d1d, #991b1b);
+}
+
+/* ── Progress bar ────────────────────────────────────────────────── */
+.progress-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05);
+}
+.progress-title {
+  font-size: .78rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: #9CA3AF; margin-bottom: 1.1rem;
+}
+
+/* Progress steps */
+.progress-steps {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+.progress-track {
+  position: absolute;
+  top: 16px; left: 16px;
+  right: 16px; height: 3px;
+  background: #E5E7EB;
+  border-radius: 2px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2C4A3E, #C8773A);
+  border-radius: 2px;
+  transition: width .6s ease;
+}
+.progress-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.progress-step__dot {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem;
+  border: 3px solid #E5E7EB;
+  background: #fff;
+  margin-bottom: .4rem;
+  transition: all .3s;
+}
+.progress-step--done   .progress-step__dot { background: #2C4A3E; border-color: #2C4A3E; color: #fff; }
+.progress-step--active .progress-step__dot { background: #C8773A; border-color: #C8773A; color: #fff; box-shadow: 0 0 0 4px rgba(200,119,58,.2); }
+.progress-step__label {
+  font-size: .65rem; text-align: center; color: #9CA3AF;
+  line-height: 1.3; max-width: 56px;
+}
+.progress-step--done   .progress-step__label { color: #2C4A3E; font-weight: 600; }
+.progress-step--active .progress-step__label { color: #C8773A; font-weight: 700; }
+
+/* ETA bar */
+.eta-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #F0FDF4; border: 1px solid #BBF7D0;
+  border-radius: 10px; padding: .7rem 1rem;
+  font-size: .83rem;
+}
+.eta-bar i { color: #10B981; margin-right: .4rem; }
+.eta-bar strong { color: #166534; }
+
+/* ── Timeline ────────────────────────────────────────────────────── */
+.timeline-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05);
+}
+.timeline-empty {
+  text-align: center; padding: 2rem 0;
+  color: #9CA3AF; font-size: .88rem;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 2.5rem;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 14px; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #2C4A3E 0%, #E5E7EB 100%);
+}
+.timeline-event {
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+.timeline-event:last-child { padding-bottom: 0; }
+.timeline-event__dot {
+  position: absolute;
+  left: -2.5rem;
+  top: 2px;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem;
+  background: #fff;
+  border: 2px solid #E5E7EB;
+  transition: all .2s;
+}
+.timeline-event--latest .timeline-event__dot {
+  background: #2C4A3E;
+  border-color: #2C4A3E;
+  box-shadow: 0 0 0 4px rgba(44,74,62,.15);
+}
+.timeline-event__header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: .5rem;
+  margin-bottom: .2rem;
+}
+.timeline-event__status {
+  font-weight: 700; font-size: .9rem; color: #1F2937;
+}
+.timeline-event--latest .timeline-event__status { color: #2C4A3E; }
+.timeline-event__time {
+  font-size: .72rem; color: #9CA3AF; white-space: nowrap; flex-shrink: 0;
+}
+.timeline-event__location {
+  font-size: .78rem; color: #6B7280; margin-bottom: .15rem;
+}
+.timeline-event__location i { color: #C8773A; margin-right: .25rem; }
+.timeline-event__message {
+  font-size: .82rem; color: #6B7280; line-height: 1.5;
+}
+
+/* ── Right sidebar ───────────────────────────────────────────────── */
+.track-sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+.info-card {
+  background: #fff; border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05);
+}
+.info-card__title {
+  font-size: .78rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em;
+  color: #9CA3AF; margin-bottom: .875rem;
+}
+.info-row {
+  display: flex; justify-content: space-between;
+  font-size: .83rem; padding: .3rem 0;
+  border-bottom: 1px solid #F9F9F7;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row__label { color: #6B7280; }
+.info-row__value { font-weight: 600; text-align: right; }
+
+.order-item-row-mini {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .4rem 0; border-bottom: 1px solid #F9F9F7; font-size: .82rem;
+}
+.order-item-row-mini:last-child { border-bottom: none; }
+.order-item-row-mini img {
+  width: 38px; height: 38px; object-fit: cover;
+  border-radius: 6px; flex-shrink: 0;
+}
+.order-item-row-mini__name { flex: 1; color: #374151; }
+.order-item-row-mini__qty  { color: #9CA3AF; font-size: .75rem; }
+
+/* ── Share / Re-track bar ────────────────────────────────────────── */
+.track-actions {
+  display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem;
+}
+
+/* ── Refresh pulse ───────────────────────────────────────────────── */
+.refresh-dot {
+  display: inline-block;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #10B981;
+  animation: pulse 2s infinite;
+  margin-right: .35rem;
+  vertical-align: middle;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .5; transform: scale(.8); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="track-page">
+
+  <!-- Breadcrumb -->
+  <div class="container" style="max-width:860px;margin-bottom:.75rem;">
+    <div style="font-size:.8rem;color:#9CA3AF;">
+      <a href="{{ url_for('main.index') }}" style="color:#9CA3AF;">Home</a> ›
+      <a href="{{ url_for('tracking.track_search') }}" style="color:#9CA3AF;">Track Order</a> ›
+      <span style="color:#2C4A3E;">{{ order.order_number }}</span>
+    </div>
+  </div>
+
+  <div class="track-container container" style="max-width:860px;">
+
+    <!-- ── LEFT: Main tracking panel ─────────────────────────────── -->
+    <div>
+
+      <!-- Header -->
+      <div class="track-header-card {% if is_negative %}track-header-card--negative{% endif %}">
+        <div class="track-header-card__order">Order Number</div>
+        <div class="track-header-card__title">{{ order.order_number }}</div>
+        <div class="track-header-card__sub">
+          Placed {{ order.created_at.strftime('%d %B %Y') }} ·
+          {{ order.items.count() }} item{{ 's' if order.items.count() != 1 }}
+        </div>
+        <div>
+          <span class="track-status-badge">
+            {{ OrderTracking.STATUS_ICONS.get(order.status, '📦') }}
+            {{ order.status.replace('_',' ').title() }}
+          </span>
+          {% if order.payment_status == 'paid' %}
+          <span class="track-status-badge" style="margin-left:.4rem;">
+            ✅ Payment Confirmed
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      {% if not is_negative %}
+      <div class="progress-card">
+        <div class="progress-title">
+          <span class="refresh-dot"></span> Live Tracking Progress
+        </div>
+
+        <div class="progress-steps">
+          <div class="progress-track">
+            <div class="progress-fill" style="width: {{ progress_pct }}%;"></div>
+          </div>
+          {# pipeline = ['pending','confirmed','processing','shipped','delivered'] #}
+          {% set step_meta = [
+            ('pending',    '🛒', 'Placed'),
+            ('confirmed',  '✅', 'Confirmed'),
+            ('processing', '⚙️',  'Preparing'),
+            ('shipped',    '🚚', 'Shipped'),
+            ('delivered',  '🎉', 'Delivered')
+          ] %}
+          {% for step, icon, label in step_meta %}
+          {% set step_idx = pipeline.index(step) if step in pipeline else 0 %}
+          {% set state = 'done' if step_idx < progress_idx else ('active' if step_idx == progress_idx else 'pending') %}
+          <div class="progress-step progress-step--{{ state }}">
+            <div class="progress-step__dot">
+              {% if state == 'done' %}<i class="fas fa-check" style="font-size:.6rem;"></i>
+              {% elif state == 'active' %}{{ icon }}
+              {% else %}{{ loop.index }}{% endif %}
+            </div>
+            <div class="progress-step__label">{{ label }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- ETA -->
+        {% if order.estimated_delivery %}
+        <div class="eta-bar">
+          <div>
+            <i class="fas fa-calendar-check"></i>
+            Estimated Delivery: <strong>{{ order.estimated_delivery.strftime('%A, %d %B %Y') }}</strong>
+          </div>
+          <div style="font-size:.75rem;color:#6B7280;">
+            {% set days = (order.estimated_delivery - now).days if now is defined else 0 %}
+            {% if order.status == 'delivered' %}Delivered!
+            {% elif order.estimated_delivery > (now if now is defined else order.created_at) %}On track{% endif %}
+          </div>
+        </div>
+        {% elif order.status != 'delivered' %}
+        <div class="eta-bar" style="background:#FFF8F0;border-color:#FED7AA;">
+          <div style="color:#92400E;">
+            <i class="fas fa-clock" style="color:#F59E0B;margin-right:.4rem;"></i>
+            Estimated delivery date will be updated once shipped
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Timeline -->
+      <div class="timeline-card">
+        <div class="progress-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span><span class="refresh-dot"></span> Tracking Updates</span>
+          <span style="font-size:.72rem;color:#9CA3AF;">
+            Last updated: {{ events[-1].timestamp.strftime('%d %b, %I:%M %p') if events else 'N/A' }}
+          </span>
+        </div>
+
+        {% if events %}
+        <div class="timeline">
+          {% for event in events %}
+          <div class="timeline-event {% if loop.last %}timeline-event--latest{% endif %}">
+            <div class="timeline-event__dot">{{ event.icon }}</div>
+            <div class="timeline-event__header">
+              <div class="timeline-event__status">{{ event.label }}</div>
+              <div class="timeline-event__time">
+                {{ event.timestamp.strftime('%d %b') }}<br>
+                {{ event.timestamp.strftime('%I:%M %p') }}
+              </div>
+            </div>
+            {% if event.location %}
+            <div class="timeline-event__location">
+              <i class="fas fa-map-marker-alt"></i>{{ event.location }}
+            </div>
+            {% endif %}
+            {% if event.message %}
+            <div class="timeline-event__message">{{ event.message }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="timeline-empty">
+          <div style="font-size:2rem;margin-bottom:.5rem;">📦</div>
+          <div>No tracking updates yet.</div>
+          <div style="font-size:.78rem;margin-top:.25rem;">Updates will appear here once your order ships.</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Actions -->
+      <div class="track-actions" style="margin-top:1rem;">
+        <a href="{{ url_for('tracking.track_search') }}" class="btn btn--outline btn--sm">
+          <i class="fas fa-search"></i> Track Another Order
+        </a>
+        {% if current_user.is_authenticated and current_user.is_customer %}
+        <a href="{{ url_for('buyer.orders') }}" class="btn btn--outline btn--sm">
+          <i class="fas fa-list"></i> My Orders
+        </a>
+        {% endif %}
+        <button class="btn btn--outline btn--sm" onclick="copyTrackingLink()">
+          <i class="fas fa-share-alt"></i> Share Tracking Link
+        </button>
+        {% if order.tracking_number %}
+        <div style="font-size:.8rem;color:#6B7280;display:flex;align-items:center;gap:.4rem;padding:.4rem .75rem;background:#F9FAFB;border-radius:8px;border:1px solid #E5E7EB;">
+          <i class="fas fa-truck"></i>
+          AWB: <strong>{{ order.tracking_number }}</strong>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- ── RIGHT: Sidebar ─────────────────────────────────────────── -->
+    <div class="track-sidebar">
+
+      <!-- Order Info -->
+      <div class="info-card">
+        <div class="info-card__title">Order Details</div>
+        <div class="info-row">
+          <span class="info-row__label">Order #</span>
+          <span class="info-row__value" style="font-family:monospace;font-size:.8rem;">{{ order.order_number }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Date</span>
+          <span class="info-row__value">{{ order.created_at.strftime('%d %b %Y') }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Total</span>
+          <span class="info-row__value">{{ order.total | inr }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Payment</span>
+          <span class="info-row__value">
+            {% if order.payment_status == 'paid' %}
+            <span style="color:#10B981;">✓ Paid</span>
+            {% else %}
+            {{ order.payment_status.title() }}
+            {% endif %}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Items</span>
+          <span class="info-row__value">{{ order.items.count() }}</span>
+        </div>
+      </div>
+
+      <!-- Delivery Address -->
+      <div class="info-card">
+        <div class="info-card__title">Delivery Address</div>
+        <div style="font-size:.84rem;color:#374151;line-height:1.7;">
+          <strong>{{ order.full_name }}</strong><br>
+          {{ order.address_line1 }}<br>
+          {% if order.address_line2 %}{{ order.address_line2 }}<br>{% endif %}
+          {{ order.city }}{% if order.state %}, {{ order.state }}{% endif %}<br>
+          {{ order.postal_code }}, {{ order.country }}<br>
+          {% if order.phone %}
+          <span style="color:#9CA3AF;font-size:.78rem;">📞 {{ order.phone }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Items -->
+      <div class="info-card">
+        <div class="info-card__title">Items Ordered</div>
+        {% for item in order.items %}
+        <div class="order-item-row-mini">
+          {% if item.product_image %}
+          <img src="{{ media_url(item.product_image, 'products') }}"
+               alt="{{ item.product_name }}" loading="lazy">
+          {% else %}
+          <div style="width:38px;height:38px;background:#F0EDE8;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;">🧵</div>
+          {% endif %}
+          <div class="order-item-row-mini__name">{{ item.product_name }}</div>
+          <div class="order-item-row-mini__qty">×{{ item.quantity }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Need Help -->
+      <div class="info-card" style="text-align:center;background:linear-gradient(135deg,#F0F7FF,#EFF6FF);">
+        <div style="font-size:1.5rem;margin-bottom:.4rem;">🙋</div>
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Need Help?</div>
+        <div style="font-size:.78rem;color:#6B7280;margin-bottom:.875rem;">
+          Contact the seller directly or reach our support team.
+        </div>
+        <a href="{{ url_for('main.contact') }}" class="btn btn--outline btn--sm" style="width:100%;">
+          Contact Support
+        </a>
+        {% if current_user.is_authenticated and current_user.is_customer %}
+        {% if order.items.first() and order.items.first().product and order.items.first().product.company %}
+        <a href="{{ url_for('messages.new_thread') }}?company_id={{ order.items.first().product.company_id }}"
+           class="btn btn--primary btn--sm" style="width:100%;margin-top:.5rem;">
+          Message Seller
+        </a>
+        {% endif %}
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyTrackingLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    const btn = event.target.closest('button');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    btn.style.color = '#10B981';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+  });
+}
+
+// Auto-refresh every 90 seconds to pick up new events
+let refreshTimer = setInterval(() => {
+  fetch('/api/order/{{ order.order_number }}')
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        const eventsOnPage = document.querySelectorAll('.timeline-event').length;
+        if (data.order.events.length !== eventsOnPage) {
+          // New event appeared — soft reload
+          window.location.reload();
+        }
+      }
+    }).catch(() => {});
+}, 90000);
+</script>
+{% endblock %}

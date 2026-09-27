@@ -1,0 +1,23 @@
+<div class="sidebar-brand"><strong>🛠️ Admin Panel</strong></div>
+<nav class="sidebar-nav">
+  <a href="{{ url_for('admin.dashboard') }}"   class="sidebar-nav__link {% if request.endpoint=='admin.dashboard'   %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+  <div class="sidebar-section">ANALYTICS</div>
+  <a href="{{ url_for('analytics.admin_analytics') }}" class="sidebar-nav__link {% if 'analytics' in request.endpoint %}active{% endif %}"><i class="fas fa-chart-line"></i> Analytics</a>
+  <div class="sidebar-section">SELLERS</div>
+  <a href="{{ url_for('admin.companies') }}" class="sidebar-nav__link {% if request.endpoint in ['admin.companies','admin.company_detail','admin.edit_company'] %}active{% endif %}">
+    <i class="fas fa-building"></i> Companies
+    {% set pcount = pending_companies_count if pending_companies_count is defined else 0 %}
+    {% if pcount %}<span class="badge-count">{{ pcount }}</span>{% endif %}
+  </a>
+  <div class="sidebar-section">CATALOGUE</div>
+  <a href="{{ url_for('admin.products') }}"    class="sidebar-nav__link {% if request.endpoint in ['admin.products','admin.add_product','admin.edit_product'] %}active{% endif %}"><i class="fas fa-boxes"></i> All Products</a>
+  <a href="{{ url_for('admin.add_product') }}" class="sidebar-nav__link"><i class="fas fa-plus-circle"></i> Add Product</a>
+  <a href="{{ url_for('admin.categories') }}"  class="sidebar-nav__link {% if 'category' in (request.endpoint or '') %}active{% endif %}"><i class="fas fa-tags"></i> Categories</a>
+  <div class="sidebar-section">COMMERCE</div>
+  <a href="{{ url_for('admin.orders') }}"      class="sidebar-nav__link {% if request.endpoint=='admin.orders' %}active{% endif %}"><i class="fas fa-receipt"></i> Orders</a>
+  <a href="{{ url_for('admin.users') }}"       class="sidebar-nav__link {% if request.endpoint=='admin.users'  %}active{% endif %}"><i class="fas fa-users"></i> Users</a>
+  <a href="{{ url_for('admin.delivery_partners') }}" class="sidebar-nav__link {% if 'delivery' in (request.endpoint or '') %}active{% endif %}"><i class="fas fa-motorcycle"></i> Delivery Partners</a>
+  <hr>
+  <a href="{{ url_for('main.index') }}" class="sidebar-nav__link" target="_blank"><i class="fas fa-eye"></i> View Site</a>
+  <a href="{{ url_for('auth.logout') }}" class="sidebar-nav__link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</nav>

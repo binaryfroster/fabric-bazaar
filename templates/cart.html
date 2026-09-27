@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block title %}Your Cart — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header page-header--sm">
+  <div class="container">
+    <h1>Your Cart</h1>
+  </div>
+</div>
+
+<div class="container cart-layout">
+
+  {% if cart_items %}
+
+  <!-- ══════════════════════════════════ CART ITEMS -->
+  <div class="cart-items">
+    <div class="cart-table-head">
+      <span>Product</span>
+      <span>Price</span>
+      <span>Qty</span>
+      <span>Subtotal</span>
+    </div>
+
+    {% for item in cart_items %}
+    {% set product = item.product %}
+    <div class="cart-row">
+      <!-- Product info -->
+      <div class="cart-row__product">
+        <a href="{{ url_for('shop.product_detail', slug=product.slug) }}" class="cart-row__img">
+          <img src="{{ media_url(product.primary_image, 'products') }}" alt="{{ product.name }}"
+               onerror="this.src='{{ url_for('static', filename='images/placeholder.jpg') }}'" loading="lazy">
+        </a>
+        <div class="cart-row__details">
+          <h4><a href="{{ url_for('shop.product_detail', slug=product.slug) }}">{{ product.name }}</a></h4>
+          {% if product.color %}<p>{{ product.color }}{% if product.size %} · {{ product.size }}{% endif %}</p>{% endif %}
+          {% if product.material %}<p>{{ product.material }}</p>{% endif %}
+          <!-- Mobile price -->
+          <p class="cart-row__mobile-price">{{ product.display_price | inr }}</p>
+        </div>
+      </div>
+
+      <!-- Unit price -->
+      <div class="cart-row__price">
+        {{ product.display_price | inr }}
+      </div>
+
+      <!-- Qty update -->
+      <div class="cart-row__qty">
+        <form action="{{ url_for('cart.update_cart', product_id=product.id) }}" method="post" class="qty-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="qty-control qty-control--sm">
+            <button type="button" class="qty-btn"
+                    onclick="stepQty(this,-1)"
+                    data-min="{{ product.min_order_qty or 1 }}">−</button>
+            <input type="number" name="quantity"
+                   value="{{ item.quantity }}"
+                   min="{{ product.min_order_qty or 1 }}"
+                   max="{{ product.stock }}"
+                   onchange="this.closest('form').submit()" />
+            <button type="button" class="qty-btn"
+                    onclick="stepQty(this,1)"
+                    data-max="{{ product.stock }}"
+                    data-min="{{ product.min_order_qty or 1 }}">+</button>
+          </div>
+          {% if product.min_order_qty and product.min_order_qty > 1 %}
+          <div style="font-size:.68rem;color:var(--warning);margin-top:.25rem;white-space:nowrap;">
+            Min: {{ product.min_order_qty }} pcs
+          </div>
+          {% endif %}
+        </form>
+      </div>
+
+      <!-- Subtotal -->
+      <div class="cart-row__subtotal">
+        {{ item.subtotal | inr }}
+      </div>
+
+      <!-- Remove -->
+      <form action="{{ url_for('cart.remove_from_cart', product_id=product.id) }}" method="post" class="cart-row__remove">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" title="Remove item" aria-label="Remove {{ product.name }}">✕</button>
+      </form>
+    </div>
+    {% endfor %}
+
+    <!-- Clear cart -->
+    <div class="cart-actions">
+      <form action="{{ url_for('cart.clear_cart') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="btn btn--ghost btn--sm">Clear Cart</button>
+      </form>
+      <a href="{{ url_for('shop.index') }}" class="btn btn--outline btn--sm">← Continue Shopping</a>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════ ORDER SUMMARY -->
+  <aside class="cart-summary">
+    <h2>Order Summary</h2>
+
+    <div class="summary-row">
+      <span>Subtotal</span>
+      <span>{{ subtotal | inr }}</span>
+    </div>
+    <div class="summary-row">
+      <span>Shipping</span>
+      <span>
+        {% if shipping == 0 and subtotal > 0 %}
+          <span class="free-shipping">Free</span>
+        {% elif shipping > 0 %}
+          {{ shipping | inr }}
+        {% else %}
+          —
+        {% endif %}
+      </span>
+    </div>
+    {% if shipping > 0 %}
+      <p class="free-ship-note">Add {{ 800 - subtotal | inr }} more for free shipping</p>
+    {% endif %}
+    <div class="summary-divider"></div>
+    <div class="summary-row summary-row--total">
+      <span>Total</span>
+      <span>{{ total | inr }}</span>
+    </div>
+    <p class="summary-vat-note">VAT calculated at checkout</p>
+
+    <a href="{{ url_for('checkout.index') }}" class="btn btn--primary btn--full">
+      Proceed to Checkout →
+    </a>
+
+    {% if not current_user.is_authenticated %}
+    <p class="summary-login-note">
+      <a href="{{ url_for('auth.login', next=url_for('checkout.index')) }}">Sign in</a> to save your cart and checkout faster.
+    </p>
+    {% endif %}
+
+    <div class="summary-trust">
+      <span><i class="fas fa-lock"></i> Secure checkout</span>
+      <span><i class="fab fa-cc-visa"></i></span>
+      <span><i class="fab fa-cc-mastercard"></i></span>
+    </div>
+  </aside>
+
+  {% else %}
+
+  <!-- Empty cart -->
+  <div class="empty-state">
+    <i class="fas fa-shopping-bag"></i>
+    <h2>Your cart is empty</h2>
+    <p>Discover our luxurious collection of bedsheets and find your perfect match.</p>
+    <a href="{{ url_for('shop.index') }}" class="btn btn--primary">Shop Now</a>
+  </div>
+
+  {% endif %}
+
+</div>
+
+<script>
+function stepQty(btn, dir) {
+  const input = btn.closest('.qty-control').querySelector('input');
+  const max   = parseInt(btn.dataset.max || 99);
+  const newVal = parseInt(input.value) + dir;
+  if (newVal >= 1 && newVal <= max) {
+    input.value = newVal;
+    input.closest('form').submit();
+  }
+}
+</script>
+{% endblock %}

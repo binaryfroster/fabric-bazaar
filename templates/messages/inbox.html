@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<div class="container" style="max-width:780px;padding:2rem 1rem 3rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
+    <h1 style="font-size:1.5rem;font-weight:700;color:var(--secondary);">
+      💬 Messages {% if unread_total > 0 %}<span class="badge-count" style="font-size:.75rem;">{{ unread_total }}</span>{% endif %}
+    </h1>
+    {% if current_user.is_customer %}
+    <a href="{{ url_for('messages.new_thread') }}" class="btn btn--primary">
+      <i class="fas fa-pen"></i> New Message
+    </a>
+    {% endif %}
+  </div>
+
+  {% if threads %}
+  <div class="inbox-list">
+    {% for t in threads %}
+    {% set last = t.last_message %}
+    {% set unread = t.unread_customer if current_user.is_customer else t.unread_seller %}
+    <a href="{{ url_for('messages.thread', thread_id=t.id) }}"
+       class="inbox-item {% if unread > 0 %}inbox-item--unread{% endif %}">
+      <div class="inbox-item__avatar">
+        {% if current_user.is_customer and t.company.logo %}
+          <img src="{{ media_url(t.company.logo, 'companies') }}" alt="" loading="lazy">
+        {% else %}
+          <div class="inbox-avatar-initial">{{ (t.company.name[0] if current_user.is_customer else t.customer.first_name[0]) }}</div>
+        {% endif %}
+      </div>
+      <div class="inbox-item__body">
+        <div class="inbox-item__top">
+          <strong class="inbox-item__name">
+            {{ t.company.name if current_user.is_customer else t.customer.full_name }}
+          </strong>
+          <span class="inbox-item__time">{{ t.updated_at.strftime('%d %b') }}</span>
+        </div>
+        <div class="inbox-item__subject">{{ t.subject }}</div>
+        {% if last %}
+        <div class="inbox-item__preview">{{ last.body[:80] }}{% if last.body|length > 80 %}…{% endif %}</div>
+        {% endif %}
+        {% if t.product %}
+        <div class="inbox-item__product">
+          <i class="fas fa-tag" style="font-size:.7rem;"></i> {{ t.product.name }}
+        </div>
+        {% endif %}
+      </div>
+      {% if unread > 0 %}
+      <div class="inbox-item__badge">{{ unread }}</div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:4rem 2rem;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:1rem;">💬</div>
+    <h3>No messages yet</h3>
+    <p style="color:var(--text-muted);">
+      {% if current_user.is_customer %}
+        Visit a seller's page and click "Ask Seller" to start a conversation.
+      {% else %}
+        Messages from buyers will appear here.
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

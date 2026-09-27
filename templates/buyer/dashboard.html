@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}My Account{% endblock %}
+{% block content %}
+<div class="container" style="max-width:900px;padding:2rem 1rem 3rem;">
+  <h1 style="font-size:1.5rem;font-weight:800;color:var(--secondary);margin-bottom:1.75rem;">
+    Welcome back, {{ current_user.first_name }}! 👋
+  </h1>
+
+  <!-- Quick Stats (3 cards, no loyalty) -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.75rem;">
+    <a href="{{ url_for('buyer.orders') }}" class="kpi-card" style="text-decoration:none;">
+      <div class="kpi-card__icon">📦</div>
+      <div class="kpi-card__value">{{ current_user.orders.count() }}</div>
+      <div class="kpi-card__label">Total Orders</div>
+    </a>
+    <a href="{{ url_for('messages.inbox') }}"
+       class="kpi-card {% if unread > 0 %}kpi-card--warn{% endif %}" style="text-decoration:none;">
+      <div class="kpi-card__icon">💬</div>
+      <div class="kpi-card__value">{{ unread }}</div>
+      <div class="kpi-card__label">Unread Messages</div>
+      {% if unread > 0 %}<div class="kpi-card__sub kpi-card__sub--warn">New replies</div>{% endif %}
+    </a>
+  </div>
+
+  <!-- Recent Orders -->
+  <div class="chart-card">
+    <div class="chart-card__header">
+      <h3>Recent Orders</h3>
+      <a href="{{ url_for('buyer.orders') }}" class="section__link">View All →</a>
+    </div>
+    {% if orders %}
+    <table class="data-table">
+      <thead>
+        <tr><th>Order #</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><strong style="font-size:.85rem;">{{ o.order_number }}</strong></td>
+          <td style="font-size:.85rem;">{{ o.items.count() }} item{{ 's' if o.items.count() != 1 }}</td>
+          <td style="font-weight:700;">{{ o.total | inr }}</td>
+          <td>
+            <span class="badge badge--{{
+              'success' if o.status=='delivered' else
+              'info'    if o.status in ['shipped','processing','confirmed'] else
+              'danger'  if o.status in ['cancelled','refunded'] else 'muted' }}">
+              {{ o.status.replace('_',' ').title() }}
+            </span>
+          </td>
+          <td style="font-size:.82rem;color:var(--text-muted);">{{ o.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <a href="{{ url_for('buyer.order_detail', order_number=o.order_number) }}"
+               class="btn btn--xs btn--outline">Track</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state" style="padding:2.5rem 1rem;text-align:center;">
+      <div style="font-size:3rem;margin-bottom:.75rem;">🛍️</div>
+      <p>No orders yet. <a href="{{ url_for('shop.index') }}" style="color:var(--primary);font-weight:600;">Start shopping →</a></p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

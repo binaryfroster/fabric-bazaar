@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block title %}All Orders{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+    <div class="dashboard__topbar"><h1>All Orders</h1></div>
+
+    <!-- Status Filter Tabs -->
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+      <a href="{{ url_for('admin.orders') }}"
+         class="btn btn--sm btn--{{ 'primary' if not status else 'outline' }}">All</a>
+      {% for s in order_statuses %}
+      <a href="{{ url_for('admin.orders') }}?status={{ s }}"
+         class="btn btn--sm btn--{{ 'primary' if status==s else 'outline' }}">
+        {{ s.title() }}
+      </a>
+      {% endfor %}
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Order #</th>
+          <th>Customer</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Payment</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Update Status</th>
+          <th>Track</th>
+          <th>Assign</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders.items %}
+        <tr>
+          <td><strong>{{ o.order_number }}</strong></td>
+          <td>{{ o.full_name }}<br><small>{{ o.email }}</small></td>
+          <td>{{ o.items.count() }}</td>
+          <td><strong>{{ o.total | inr }}</strong></td>
+          <td>
+            <span class="badge badge--{{ 'success' if o.payment_status=='paid' else 'warn' }}">
+              {{ o.payment_status.title() }}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge--{{
+              'success' if o.status=='delivered' else
+              'info'    if o.status in ['shipped','confirmed'] else
+              'danger'  if o.status in ['cancelled','refunded'] else
+              'muted' }}">
+              {{ o.status.title() }}
+            </span>
+          </td>
+          <td>{{ o.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.update_order_status', oid=o.id) }}"
+                  style="display:flex;gap:.4rem;align-items:center;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select name="status" class="form-control form-control--xs">
+                {% for s in order_statuses %}
+                <option value="{{ s }}" {% if o.status==s %}selected{% endif %}>{{ s.title() }}</option>
+                {% endfor %}
+              </select>
+              <button class="btn btn--xs btn--primary">✓</button>
+            </form>
+          </td>
+          <td>
+            <a href="{{ url_for('tracking.admin_track', oid=o.id) }}"
+               class="btn btn--xs btn--outline" title="Manage Tracking">
+              <i class="fas fa-map-marker-alt"></i>
+            </a>
+          </td>
+          <td>
+            {% if o.delivery_assignment %}
+            <span class="badge badge--{{ 'success' if o.delivery_assignment.status=='delivered' else 'info' }}" style="font-size:.65rem;">
+              🏍️ {{ o.delivery_assignment.partner.user.first_name }}
+            </span>
+            {% elif o.status in ['shipped','processing','confirmed'] %}
+            <button class="btn btn--xs btn--outline"
+                    onclick="document.getElementById('assignModal{{ o.id }}').style.display='flex'"
+                    title="Assign Delivery Partner">
+              <i class="fas fa-motorcycle"></i>
+            </button>
+            <!-- Assign modal -->
+            <div id="assignModal{{ o.id }}"
+                 style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+                        z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+              <div style="background:#fff;border-radius:16px;padding:1.5rem;max-width:360px;width:100%;">
+                <h3 style="margin-bottom:.75rem;font-size:1rem;">Assign Delivery Partner</h3>
+                <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:1rem;">
+                  Order: <strong>{{ o.order_number }}</strong> → {{ o.full_name }}
+                </div>
+                <form method="POST" action="{{ url_for('delivery.admin_assign') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="order_id" value="{{ o.id }}">
+                  <select name="partner_id" class="form-control" style="margin-bottom:.75rem;" required>
+                    <option value="">Select partner...</option>
+                    {% for dp in delivery_partners %}
+                    <option value="{{ dp.id }}" {% if dp.status == 'available' %}style="font-weight:600;"{% endif %}>
+                      {{ dp.user.full_name }}
+                      ({{ dp.status }}) — {{ dp.area or 'No area set' }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                  <div style="display:flex;gap:.5rem;">
+                    <button type="submit" class="btn btn--primary btn--sm">Assign</button>
+                    <button type="button" class="btn btn--ghost btn--sm"
+                            onclick="document.getElementById('assignModal{{ o.id }}').style.display='none'">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            {% else %}
+            —
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="10" style="text-align:center;padding:2rem;color:var(--text-muted);">
+            No orders found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if orders.pages > 1 %}
+    <div class="pagination">
+      {% if orders.has_prev %}
+        <a href="?page={{ orders.prev_num }}&status={{ status }}" class="btn btn--outline btn--sm">← Prev</a>
+      {% endif %}
+      <span>Page {{ orders.page }} of {{ orders.pages }}</span>
+      {% if orders.has_next %}
+        <a href="?page={{ orders.next_num }}&status={{ status }}" class="btn btn--outline btn--sm">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

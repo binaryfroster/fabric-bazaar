@@ -1,0 +1,85 @@
+<!-- Shared product form fields used by add_product.html and edit_product.html -->
+
+<div class="admin-form-grid">
+
+  <!-- Left column -->
+  <div class="admin-form-col">
+    <h3 class="form-section__title">Basic Information</h3>
+    <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+      {{ form.name.label }} {{ form.name(class='form-control') }}
+      {% for e in form.name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+    </div>
+    <div class="form-group {% if form.description.errors %}has-error{% endif %}">
+      {{ form.description.label }} {{ form.description(class='form-control', rows=4) }}
+      {% for e in form.description.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+    </div>
+    <div class="form-group">
+      {{ form.details.label }} {{ form.details(class='form-control', rows=3, placeholder='Fabric, care instructions…') }}
+    </div>
+
+    <h3 class="form-section__title" style="margin-top:1.5rem;">Pricing & Stock</h3>
+    <div class="form-row form-row--2">
+      <div class="form-group {% if form.price.errors %}has-error{% endif %}">
+        {{ form.price.label }} {{ form.price(class='form-control') }}
+        {% for e in form.price.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </div>
+      <div class="form-group">
+        {{ form.sale_price.label }} {{ form.sale_price(class='form-control') }}
+      </div>
+    </div>
+    <div class="form-row form-row--2">
+      <div class="form-group {% if form.stock.errors %}has-error{% endif %}">
+        {{ form.stock.label }} {{ form.stock(class='form-control') }}
+        {% for e in form.stock.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </div>
+      <div class="form-group">
+        {{ form.category_id.label }} {{ form.category_id(class='form-control form-select') }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div class="admin-form-col">
+    <h3 class="form-section__title">Attributes</h3>
+    <div class="form-row form-row--2">
+      <div class="form-group">
+        {{ form.material.label }} {{ form.material(class='form-control form-select') }}
+      </div>
+      <div class="form-group">
+        {{ form.color.label }} {{ form.color(class='form-control form-select') }}
+      </div>
+    </div>
+    <div class="form-row form-row--2">
+      <div class="form-group">
+        {{ form.size.label }} {{ form.size(class='form-control form-select') }}
+      </div>
+      <div class="form-group">
+        {{ form.thread_count.label }} {{ form.thread_count(class='form-control', placeholder='e.g. 400') }}
+      </div>
+    </div>
+
+    <h3 class="form-section__title" style="margin-top:1.5rem;">Visibility Flags</h3>
+    <div class="admin-checks">
+      <label class="form-check-label">{{ form.is_active() }} {{ form.is_active.label.text }}</label>
+      <label class="form-check-label">{{ form.is_featured() }} {{ form.is_featured.label.text }}</label>
+      <label class="form-check-label">{{ form.is_new() }} {{ form.is_new.label.text }}</label>
+      <label class="form-check-label">{{ form.is_bestseller() }} {{ form.is_bestseller.label.text }}</label>
+    </div>
+
+    <h3 class="form-section__title" style="margin-top:1.5rem;">Product Images</h3>
+    <p class="admin-note">JPG, PNG or WEBP. Max 5MB each.</p>
+    <div class="form-group">
+      {{ form.image.label }} {{ form.image(class='form-file') }}
+    </div>
+    <div class="form-group">
+      {{ form.image_2.label }} {{ form.image_2(class='form-file') }}
+    </div>
+    <div class="form-group">
+      {{ form.image_3.label }} {{ form.image_3(class='form-file') }}
+    </div>
+    <div class="form-group">
+      {{ form.image_4.label }} {{ form.image_4(class='form-file') }}
+    </div>
+  </div>
+
+</div>

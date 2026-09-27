@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Categories{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+    <div class="dashboard__topbar">
+      <h1>Categories</h1>
+      <a href="{{ url_for('admin.add_category') }}" class="btn btn--primary"><i class="fas fa-plus"></i> Add Category</a>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Slug</th><th>Products</th><th>Sort</th><th>Featured</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td><strong>{{ cat.name }}</strong></td>
+          <td><code>{{ cat.slug }}</code></td>
+          <td>{{ cat.product_count }}</td>
+          <td>{{ cat.sort_order }}</td>
+          <td>{% if cat.is_featured %}<span class="badge badge--info">⭐ Yes</span>{% else %}—{% endif %}</td>
+          <td>
+            <a href="{{ url_for('admin.edit_category', cid=cat.id) }}" class="btn btn--xs btn--outline">Edit</a>
+            <form method="POST" action="{{ url_for('admin.delete_category', cid=cat.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn--xs btn--danger" onclick="return confirm('Delete category? Products will be uncategorised.')">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:2rem;">No categories yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

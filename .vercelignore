@@ -1,0 +1,22 @@
+# Local artifacts that should never ship to the serverless bundle
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.db
+*.sqlite
+*.sqlite3
+.env
+*.env
+instance/
+*.log
+
+# Local-only helper scripts / docs not needed at runtime
+run.bat
+run_windows.bat
+setup_windows.bat
+start.sh
+Procfile
+HOW-TO-RUN.txt
+HOW_TO_RUN.md

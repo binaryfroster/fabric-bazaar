@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+    <div class="dashboard__topbar">
+      <a href="{{ url_for('admin.categories') }}" class="btn btn--ghost btn--sm">← Categories</a>
+      <h1>{{ title }}</h1>
+    </div>
+    <div style="max-width:540px;">
+      <form method="POST" class="profile-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-section">
+          <div class="form-group">
+            <label>Category Name *</label>
+            <input type="text" name="name" class="form-control" required value="{{ cat.name if cat else '' }}" placeholder="e.g. Bed Sheets">
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea name="description" class="form-control" rows="3" placeholder="Short description">{{ cat.description if cat else '' }}</textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Sort Order (lower = first)</label>
+              <input type="number" name="sort_order" class="form-control" value="{{ cat.sort_order if cat else 0 }}">
+            </div>
+            {% if cat %}
+            <div class="form-group" style="display:flex;align-items:center;gap:0.5rem;padding-top:2rem;">
+              <input type="checkbox" name="is_featured" id="is_featured" {% if cat.is_featured %}checked{% endif %}>
+              <label for="is_featured">Featured on homepage</label>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <button type="submit" class="btn btn--primary btn--lg">{{ 'Save Changes' if cat else 'Create Category' }}</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

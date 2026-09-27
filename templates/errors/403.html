@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Access Denied{% endblock %}
+{% block meta_desc %}You don't have permission to access this page.{% endblock %}
+{% block content %}
+<div style="min-height:60vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:3rem 1rem;">
+  <div>
+    <div style="font-size:5rem;margin-bottom:1rem;">🔒</div>
+    <h1 style="font-size:2rem;font-weight:700;margin-bottom:.5rem;">Access Denied</h1>
+    <p style="color:#666;margin-bottom:2rem;">You don't have permission to view this page.</p>
+    <a href="{{ url_for('main.index') }}" class="btn btn--primary">Back to Home</a>
+  </div>
+</div>
+{% endblock %}

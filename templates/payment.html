@@ -1,0 +1,553 @@
+{% extends 'base.html' %}
+{% block title %}Secure Payment — {{ brand_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Layout ── */
+.pay-page {
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F7F4F0;
+  padding: 2rem 1rem;
+}
+
+.pay-card {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.10);
+  overflow: hidden;
+  animation: slideUp .4s ease both;
+}
+@keyframes slideUp { from { opacity:0; transform:translateY(24px); } }
+
+/* ── Header ── */
+.pay-header {
+  padding: 2rem 2rem 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid #F0EDE8;
+}
+.pay-logo {
+  height: 48px;
+  margin: 0 auto .75rem;
+  display: block;
+  object-fit: contain;
+}
+.pay-logo-text {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #2C4A3E;
+  margin-bottom: .25rem;
+}
+.pay-order-tag {
+  display: inline-block;
+  background: #F0EDE8;
+  color: #2C4A3E;
+  font-size: .75rem;
+  font-weight: 600;
+  padding: .2rem .75rem;
+  border-radius: 20px;
+  letter-spacing: .04em;
+  margin-bottom: .6rem;
+}
+.pay-header p { font-size: .88rem; color: #888; }
+
+/* ── Amount block ── */
+.pay-amount {
+  background: linear-gradient(135deg, #2C4A3E, #3d6b5c);
+  color: #fff;
+  padding: 1.75rem 2rem;
+  text-align: center;
+}
+.pay-amount__label {
+  font-size: .7rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+  margin-bottom: .3rem;
+}
+.pay-amount__value {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1;
+  margin-bottom: .4rem;
+}
+.pay-amount__detail {
+  font-size: .78rem;
+  color: rgba(255,255,255,.5);
+}
+
+/* ── Order summary (collapsible) ── */
+.pay-summary-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: .85rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: .83rem;
+  color: #C8773A;
+  font-weight: 600;
+  border-bottom: 1px solid #F0EDE8;
+}
+.pay-summary-toggle i { transition: transform .25s; }
+.pay-summary-toggle.open i { transform: rotate(180deg); }
+.pay-summary-body {
+  display: none;
+  padding: .75rem 2rem;
+  border-bottom: 1px solid #F0EDE8;
+  background: #FAFAF9;
+}
+.pay-summary-body.open { display: block; }
+.pay-summary-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: .83rem;
+  padding: .3rem 0;
+  color: #555;
+}
+.pay-summary-item--total {
+  font-weight: 700;
+  color: #2C4A3E;
+  border-top: 1px solid #E8E4DE;
+  padding-top: .6rem;
+  margin-top: .3rem;
+}
+
+/* ── Payment buttons ── */
+.pay-methods {
+  padding: 1.5rem 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+}
+
+.pay-btn {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  border: 2px solid;
+  cursor: pointer;
+  background: #fff;
+  font-family: inherit;
+  transition: all .2s ease;
+  text-align: left;
+}
+.pay-btn:hover { transform: translateY(-2px); }
+.pay-btn:active { transform: translateY(0); }
+.pay-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.pay-btn--primary {
+  border-color: #3395FF;
+  color: #1a6fc4;
+  box-shadow: 0 2px 8px rgba(51,149,255,.12);
+}
+.pay-btn--primary:hover {
+  background: #3395FF;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(51,149,255,.35);
+}
+
+.pay-btn--upi {
+  border-color: #5A2D82;
+  color: #5A2D82;
+}
+.pay-btn--upi:hover {
+  background: #5A2D82;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(90,45,130,.3);
+}
+
+.pay-btn__icon {
+  width: 42px; height: 42px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  background: rgba(0,0,0,.05);
+  transition: background .2s;
+}
+.pay-btn:hover .pay-btn__icon { background: rgba(255,255,255,.2); }
+
+.pay-btn__body { flex: 1; }
+.pay-btn__body strong { display: block; font-size: .92rem; }
+.pay-btn__body span   { font-size: .75rem; opacity: .65; }
+
+.pay-divider {
+  text-align: center;
+  font-size: .75rem;
+  color: #aaa;
+  position: relative;
+}
+.pay-divider::before, .pay-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%; width: 42%;
+  height: 1px;
+  background: #E8E4DE;
+}
+.pay-divider::before { left: 0; }
+.pay-divider::after  { right: 0; }
+
+/* ── Footer ── */
+.pay-footer {
+  padding: 1rem 2rem 1.75rem;
+  text-align: center;
+}
+.pay-secure {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  font-size: .76rem;
+  color: #aaa;
+}
+.pay-secure i { color: #10B981; }
+.pay-back {
+  display: block;
+  margin-top: .6rem;
+  font-size: .78rem;
+  color: #aaa;
+  text-decoration: none;
+}
+.pay-back:hover { color: #C8773A; }
+
+/* ── Overlays ── */
+.pay-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  background: rgba(15,30,20,.92);
+  backdrop-filter: blur(4px);
+}
+.pay-overlay.active { display: flex; }
+
+.spin-ring {
+  width: 60px; height: 60px;
+  border: 3px solid rgba(255,255,255,.15);
+  border-top-color: #C8773A;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.overlay-text {
+  color: rgba(255,255,255,.85);
+  font-size: .9rem;
+  letter-spacing: .05em;
+}
+
+.success-ring {
+  width: 80px; height: 80px;
+  background: #10B981;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; color: #fff;
+  animation: popIn .5s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes popIn { from { transform: scale(0); } }
+
+.overlay-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+.overlay-sub {
+  font-size: .85rem;
+  color: rgba(255,255,255,.55);
+}
+
+/* ── Error state ── */
+.pay-error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #B91C1C;
+  padding: .75rem 1rem;
+  border-radius: 8px;
+  font-size: .83rem;
+  margin: 0 2rem 1rem;
+  display: none;
+}
+.pay-error.show { display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Processing Overlay -->
+<div class="pay-overlay" id="overlayProcessing">
+  <div class="spin-ring"></div>
+  <div class="overlay-text">Processing your payment…</div>
+</div>
+
+<!-- Success Overlay -->
+<div class="pay-overlay" id="overlaySuccess">
+  <div class="success-ring">✓</div>
+  <div class="overlay-title">Payment Successful!</div>
+  <div class="overlay-sub">Redirecting to your order…</div>
+</div>
+
+<div class="pay-page">
+  <div class="pay-card">
+
+    <!-- Header -->
+    <div class="pay-header">
+      {# Logo: show if static/images/logo.png exists, otherwise show brand text #}
+      {% if config.get('RAZORPAY_KEY_ID') %}
+        <img src="{{ url_for('static', filename='images/logo.png') }}"
+             alt="{{ brand_name }}"
+             class="pay-logo"
+             onerror="this.style.display='none';document.getElementById('payBrandText').style.display='block'" loading="lazy">
+        <div id="payBrandText" class="pay-logo-text" style="display:none;">{{ brand_name }}</div>
+      {% else %}
+        <div class="pay-logo-text">{{ brand_name }}</div>
+      {% endif %}
+      <div class="pay-order-tag">{{ order.order_number }}</div>
+      <p>Hi <strong>{{ order.first_name }}</strong>, complete your purchase securely</p>
+    </div>
+
+    <!-- Amount -->
+    <div class="pay-amount">
+      <div class="pay-amount__label">Amount Payable</div>
+      <div class="pay-amount__value">₹{{ "%.0f"|format(order.total) }}</div>
+      <div class="pay-amount__detail">
+        Subtotal ₹{{ "%.0f"|format(order.subtotal) }} + GST ₹{{ "%.0f"|format(order.tax) }}
+        {% if order.shipping_cost and order.shipping_cost|float > 0 %} + Shipping ₹{{ "%.0f"|format(order.shipping_cost) }}{% else %} · Free shipping{% endif %}
+      </div>
+    </div>
+
+    <!-- Order Items Toggle -->
+    <button class="pay-summary-toggle" id="summaryToggle" type="button">
+      <span>View {{ order.items.count() }} item{{ 's' if order.items.count() != 1 }}</span>
+      <i class="fas fa-chevron-down"></i>
+    </button>
+    <div class="pay-summary-body" id="summaryBody">
+      {% for item in order.items %}
+      <div class="pay-summary-item">
+        <span>{{ item.product_name }} × {{ item.quantity }}</span>
+        <span>₹{{ "%.0f"|format(item.subtotal) }}</span>
+      </div>
+      {% endfor %}
+      <div class="pay-summary-item pay-summary-item--total">
+        <span>Total</span>
+        <span>₹{{ "%.0f"|format(order.total) }}</span>
+      </div>
+    </div>
+
+    <!-- Error message -->
+    <div class="pay-error" id="payError"></div>
+
+    <!-- Payment Buttons -->
+    <div class="pay-methods">
+      <button class="pay-btn pay-btn--primary" id="btnRazorpay" type="button">
+        <div class="pay-btn__icon"><i class="fas fa-bolt"></i></div>
+        <div class="pay-btn__body">
+          <strong>Pay ₹{{ "%.0f"|format(order.total) }}</strong>
+          <span>Cards · UPI · Net Banking · Wallets · EMI</span>
+        </div>
+        <i class="fas fa-chevron-right" style="opacity:.3"></i>
+      </button>
+
+      {% if config.RAZORPAY_UPI_ID %}
+      <div class="pay-divider">or pay directly via UPI</div>
+
+      <button class="pay-btn pay-btn--upi" id="btnUPI" type="button">
+        <div class="pay-btn__icon"><i class="fas fa-mobile-alt"></i></div>
+        <div class="pay-btn__body">
+          <strong>Pay via UPI</strong>
+          <span>PhonePe · GPay · Paytm · any UPI app</span>
+        </div>
+        <i class="fas fa-external-link-alt" style="opacity:.3"></i>
+      </button>
+      {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <div class="pay-footer">
+      <div class="pay-secure">
+        <i class="fas fa-shield-alt"></i>
+        256-bit SSL · Secured by Razorpay
+      </div>
+      <a href="{{ url_for('checkout.index') }}" class="pay-back">← Edit order / Go back</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+/* ─── Config passed from server ──────────────────────────── */
+const ORDER_NUMBER   = "{{ order.order_number }}";
+const RZP_KEY        = "{{ razorpay_key }}";
+const BRAND_NAME     = "{{ brand_name }}";
+const CREATE_URL     = "{{ url_for('checkout.create_razorpay_order') }}";
+const VERIFY_URL     = "{{ url_for('checkout.verify_payment') }}";
+const FAILED_URL     = "{{ url_for('checkout.payment_failed') }}";
+const UPI_LINK       = "upi://pay?pa={{ config.RAZORPAY_UPI_ID }}&pn=FabricBazaar&am={{ order.total }}&cu=INR&tn=Order-{{ order.order_number }}";
+const CSRF_TOKEN     = "{{ csrf_token() }}";
+
+/* ─── UI helpers ─────────────────────────────────────────── */
+const overlayProcessing = document.getElementById('overlayProcessing');
+const overlaySuccess    = document.getElementById('overlaySuccess');
+const payError          = document.getElementById('payError');
+
+const showProcessing = ()       => overlayProcessing.classList.add('active');
+const hideProcessing = ()       => overlayProcessing.classList.remove('active');
+const showSuccess    = (url)    => {
+  overlaySuccess.classList.add('active');
+  setTimeout(() => window.location.href = url, 2000);
+};
+const showError = (msg) => {
+  payError.textContent = '⚠️ ' + msg;
+  payError.classList.add('show');
+  setTimeout(() => payError.classList.remove('show'), 6000);
+};
+
+/* ─── Summary toggle ─────────────────────────────────────── */
+const toggle = document.getElementById('summaryToggle');
+const body   = document.getElementById('summaryBody');
+toggle.addEventListener('click', () => {
+  toggle.classList.toggle('open');
+  body.classList.toggle('open');
+});
+
+/* ─── Razorpay Pay Button ────────────────────────────────── */
+document.getElementById('btnRazorpay').addEventListener('click', async () => {
+  const btn = document.getElementById('btnRazorpay');
+  btn.disabled = true;
+  showProcessing();
+
+  let rzpOrderData;
+
+  /* Step 1: Ask server to create a Razorpay order */
+  try {
+    const res = await fetch(CREATE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: JSON.stringify({ order_number: ORDER_NUMBER }),
+    });
+    rzpOrderData = await res.json();
+    if (!rzpOrderData.success) throw new Error(rzpOrderData.error || 'Could not create payment order');
+  } catch (err) {
+    hideProcessing();
+    btn.disabled = false;
+    showError(err.message || 'Payment service unavailable. Please try again.');
+    return;
+  }
+
+  hideProcessing();
+
+  /* Step 2: Open Razorpay checkout */
+  const options = {
+    key:         RZP_KEY,
+    amount:      rzpOrderData.amount,          // in paise — from server
+    currency:    'INR',
+    name:        BRAND_NAME,
+    description: 'Order ' + ORDER_NUMBER,
+    image:       '/static/images/logo.png',
+    order_id:    rzpOrderData.rzp_order_id,    // REQUIRED — from server
+    prefill: {
+      name:    rzpOrderData.name,
+      email:   rzpOrderData.email,
+      contact: rzpOrderData.phone,
+    },
+    notes: {
+      order_number: ORDER_NUMBER,
+    },
+    theme: {
+      color: '#2C4A3E',
+    },
+
+    /* Step 3: On successful payment */
+    handler: async function(response) {
+      showProcessing();
+      try {
+        const res = await fetch(VERIFY_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF_TOKEN,
+          },
+          body: JSON.stringify({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id:   response.razorpay_order_id,
+            razorpay_signature:  response.razorpay_signature,
+            order_number:        ORDER_NUMBER,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showSuccess(data.redirect);
+        } else {
+          hideProcessing();
+          showError('Payment received but verification failed. '
+            + 'Please contact support with order: ' + ORDER_NUMBER);
+        }
+      } catch {
+        hideProcessing();
+        showError('Network error during verification. '
+          + 'Save your order number: ' + ORDER_NUMBER + ' and contact us.');
+      }
+    },
+
+    modal: {
+      ondismiss: () => {
+        btn.disabled = false;
+        /* Notify server that checkout was dismissed */
+        fetch(FAILED_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+          body: JSON.stringify({ order_number: ORDER_NUMBER, reason: 'dismissed' }),
+        });
+      },
+    },
+  };
+
+  const rzp = new Razorpay(options);
+
+  rzp.on('payment.failed', async function(e) {
+    hideProcessing();
+    btn.disabled = false;
+    showError('Payment failed: ' + (e.error.description || 'Please try again.'));
+    await fetch(FAILED_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+      body: JSON.stringify({
+        order_number: ORDER_NUMBER,
+        reason: e.error.description || 'payment.failed',
+      }),
+    });
+  });
+
+  rzp.open();
+});
+
+/* ─── UPI Direct Button (only rendered when a UPI ID is configured) ── */
+const btnUPI = document.getElementById('btnUPI');
+if (btnUPI) {
+  btnUPI.addEventListener('click', () => {
+    showProcessing();
+    window.open(UPI_LINK, "_blank");
+  });
+}
+</script>
+{% endblock %}

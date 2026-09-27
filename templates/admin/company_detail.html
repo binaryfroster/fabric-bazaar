@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}{{ comp.name }} — Admin Review{% endblock %}
+{% block content %}
+<div class="dashboard">
+  <div class="dashboard__sidebar">{% include 'admin/_sidebar.html' %}</div>
+  <div class="dashboard__main">
+    <div class="dashboard__topbar">
+      <a href="{{ url_for('admin.companies') }}" class="btn btn--ghost btn--sm">← All Companies</a>
+      <h1>{{ comp.name }}</h1>
+      <a href="{{ url_for('admin.edit_company', cid=comp.id) }}" class="btn btn--primary">✏️ Edit Company</a>
+    </div>
+
+    <!-- Status Banner -->
+    {% if not comp.is_verified and comp.is_active %}
+    <div class="alert alert--warning" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>⏳ <strong>Pending Approval</strong> — This company is NOT yet visible on the marketplace. Review their details below and approve or reject.</div>
+      <div style="display:flex;gap:0.75rem;">
+        <form method="POST" action="{{ url_for('admin.verify_company', cid=comp.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--success">✓ Approve & Make Live</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.reject_company', cid=comp.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--danger" onclick="return confirm('Reject this company?')">✗ Reject</button>
+        </form>
+      </div>
+    </div>
+    {% elif comp.is_verified %}
+    <div class="alert alert--success" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div>✅ <strong>Verified & Live</strong> — This company's products appear on the marketplace.</div>
+      <div>
+        <form method="POST" action="{{ url_for('admin.toggle_company', cid=comp.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--outline btn--sm" onclick="return confirm('Suspend this company? Their products will be hidden.')">Suspend Company</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert--danger">
+      🚫 <strong>Suspended</strong> — This company is inactive. Their products are hidden from the marketplace.
+      <form method="POST" action="{{ url_for('admin.verify_company', cid=comp.id) }}" style="display:inline;margin-left:1rem;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn--sm btn--success">Re-activate & Approve</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Company Info -->
+    <div class="profile-sections" style="margin-top:1.5rem;">
+      <div class="profile-section">
+        <h3>Basic Info</h3>
+        <p><strong>Name:</strong> {{ comp.name }}</p>
+        {% if comp.tagline %}<p><strong>Tagline:</strong> {{ comp.tagline }}</p>{% endif %}
+        {% if comp.business_type %}<p><strong>Type:</strong> {{ comp.business_type }}</p>{% endif %}
+        {% if comp.established_year %}<p><strong>Est:</strong> {{ comp.established_year }}</p>{% endif %}
+        <p><strong>Owner:</strong> {{ comp.user.full_name }} ({{ comp.user.email }})</p>
+      </div>
+      <div class="profile-section">
+        <h3>Contact</h3>
+        {% if comp.phone %}<p>📞 {{ comp.phone }}</p>{% endif %}
+        {% if comp.whatsapp %}<p>💬 {{ comp.whatsapp }}</p>{% endif %}
+        {% if comp.email %}<p>✉️ {{ comp.email }}</p>{% endif %}
+        {% if comp.website %}<p>🌐 <a href="{{ comp.website }}" target="_blank">{{ comp.website }}</a></p>{% endif %}
+      </div>
+      <div class="profile-section">
+        <h3>Address</h3>
+        <p>{{ comp.full_address or '—' }}</p>
+      </div>
+      <div class="profile-section">
+        <h3>Business IDs</h3>
+        <p><strong>GST:</strong> {{ comp.gst_number or '—' }}</p>
+        <p><strong>PAN:</strong> {{ comp.pan_number or '—' }}</p>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="profile-section" style="margin-top:1rem;">
+      <h3>About</h3>
+      <p>{{ comp.description }}</p>
+    </div>
+
+    <!-- Products -->
+    <div class="dashboard-table-section" style="margin-top:1.5rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <h3>Products ({{ products|length }})</h3>
+        <a href="{{ url_for('admin.products') }}?company={{ comp.id }}" class="section__link">Manage All →</a>
+      </div>
+      {% if products %}
+      <table class="data-table">
+        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for p in products[:10] %}
+          <tr>
+            <td><strong>{{ p.name }}</strong></td>
+            <td>{{ p.fabric_type or '—' }}</td>
+            <td>{{ p.display_price | inr }}</td>
+            <td>{{ p.stock }}</td>
+            <td><span class="badge badge--{{ 'success' if p.is_active else 'muted' }}">{{ 'Active' if p.is_active else 'Hidden' }}</span></td>
+            <td>
+              <a href="{{ url_for('admin.edit_product', pid=p.id) }}" class="btn btn--xs btn--outline">Edit</a>
+              <form method="POST" action="{{ url_for('admin.toggle_product', pid=p.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn--xs btn--ghost">{{ 'Hide' if p.is_active else 'Show' }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:var(--text-muted)">No products added yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Feature / Logo -->
+    <div class="quick-actions" style="margin-top:1rem;">
+      <form method="POST" action="{{ url_for('admin.feature_company', cid=comp.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn--outline">{{ '⭐ Remove Featured' if comp.is_featured else '☆ Mark as Featured' }}</button>
+      </form>
+      <a href="{{ url_for('main.seller_detail', slug=comp.slug) }}" class="btn btn--ghost" target="_blank">👁 View Public Page</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

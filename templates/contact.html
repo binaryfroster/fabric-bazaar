@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block title %}Contact Us — {{ brand_name }}{% endblock %}
+{% block extra_css %}
+<style>
+.contact-page{padding:3.5rem 0 5rem;}
+.contact-grid{display:grid;grid-template-columns:1fr 420px;gap:3rem;align-items:start;}
+.contact-form-card{background:var(--white);border:1px solid var(--border-lt);
+  border-radius:var(--radius-lg);padding:2.5rem;box-shadow:var(--shadow);}
+.contact-form-card h2{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;
+  color:var(--secondary);margin-bottom:.4rem;}
+.contact-form-card p{font-size:.875rem;color:var(--text-muted);margin-bottom:2rem;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.contact-sidebar{display:flex;flex-direction:column;gap:1.25rem;}
+.contact-info-card{background:var(--white);border:1px solid var(--border-lt);
+  border-radius:var(--radius);padding:1.75rem;box-shadow:var(--shadow-sm);}
+.contact-info-card h3{font-size:.875rem;font-weight:700;color:var(--secondary);margin-bottom:1.25rem;
+  text-transform:uppercase;letter-spacing:.08em;}
+.contact-item{display:flex;align-items:flex-start;gap:.875rem;margin-bottom:1.25rem;}
+.contact-item:last-child{margin-bottom:0;}
+.contact-item__icon{width:40px;height:40px;border-radius:10px;background:var(--primary-light);
+  display:flex;align-items:center;justify-content:center;color:var(--primary);
+  font-size:.9rem;flex-shrink:0;}
+.contact-item__title{font-size:.8rem;font-weight:700;color:var(--text-dark);margin-bottom:.2rem;}
+.contact-item__val{font-size:.82rem;color:var(--text-muted);line-height:1.5;}
+.contact-item__val a{color:var(--primary);text-decoration:none;}
+.contact-item__val a:hover{text-decoration:underline;}
+.contact-map-card{background:var(--secondary);border-radius:var(--radius);padding:1.75rem;color:#fff;}
+.contact-map-card h3{font-size:.875rem;font-weight:700;color:rgba(255,255,255,.6);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem;}
+.contact-map-card p{font-size:.82rem;color:rgba(255,255,255,.7);line-height:1.65;}
+@media(max-width:900px){
+  .contact-grid{grid-template-columns:1fr;}
+  .contact-sidebar{order:-1;}
+  .form-row{grid-template-columns:1fr;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <h1>Contact Us</h1>
+    <p>We'd love to hear from you. Our team typically responds within 24 hours.</p>
+  </div>
+</div>
+
+<div class="container contact-page">
+  <div class="contact-grid">
+
+    <!-- Form -->
+    <div class="contact-form-card">
+      <h2>Send Us a Message</h2>
+      <p>Fill in the form below and we'll get back to you as soon as possible.</p>
+
+      <form action="{{ url_for('main.contact') }}" method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="form-row">
+          <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+            {{ form.name.label(class='form-label') }}
+            {{ form.name(class='form-control', placeholder='Your full name') }}
+            {% for err in form.name.errors %}<span class="form-error">{{ err }}</span>{% endfor %}
+          </div>
+          <div class="form-group {% if form.email.errors %}has-error{% endif %}">
+            {{ form.email.label(class='form-label') }}
+            {{ form.email(class='form-control', placeholder='you@example.com') }}
+            {% for err in form.email.errors %}<span class="form-error">{{ err }}</span>{% endfor %}
+          </div>
+        </div>
+
+        <div class="form-group {% if form.subject.errors %}has-error{% endif %}">
+          {{ form.subject.label(class='form-label') }}
+          {{ form.subject(class='form-control') }}
+          {% for err in form.subject.errors %}<span class="form-error">{{ err }}</span>{% endfor %}
+        </div>
+
+        <div class="form-group {% if form.message.errors %}has-error{% endif %}">
+          {{ form.message.label(class='form-label') }}
+          {{ form.message(class='form-control', rows='6',
+             placeholder='Tell us how we can help you…') }}
+          {% for err in form.message.errors %}<span class="form-error">{{ err }}</span>{% endfor %}
+        </div>
+
+        {{ form.submit(class='btn btn--primary btn--full btn--lg') }}
+      </form>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="contact-sidebar">
+      <div class="contact-info-card">
+        <h3>Get In Touch</h3>
+
+        <div class="contact-item">
+          <div class="contact-item__icon"><i class="fas fa-envelope"></i></div>
+          <div>
+            <div class="contact-item__title">Email</div>
+            <div class="contact-item__val">
+              <a href="mailto:hello@fabricbazaar.in">hello@fabricbazaar.in</a><br>
+              <span style="font-size:.75rem;">We reply within 24 hours</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-item">
+          <div class="contact-item__icon"><i class="fas fa-phone-alt"></i></div>
+          <div>
+            <div class="contact-item__title">Phone</div>
+            <div class="contact-item__val">
+              <a href="tel:+918001234567">+91 800 123 4567</a><br>
+              <span style="font-size:.75rem;">Mon–Sat, 9am–6pm IST</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-item">
+          <div class="contact-item__icon"><i class="fab fa-whatsapp"></i></div>
+          <div>
+            <div class="contact-item__title">WhatsApp</div>
+            <div class="contact-item__val">
+              <a href="https://wa.me/918001234567" target="_blank">Chat on WhatsApp</a><br>
+              <span style="font-size:.75rem;">Fastest response</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-item">
+          <div class="contact-item__icon"><i class="fas fa-map-marker-alt"></i></div>
+          <div>
+            <div class="contact-item__title">Office</div>
+            <div class="contact-item__val">
+              Raipur, Chhattisgarh<br>India — 492001
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-map-card">
+        <h3>For Sellers</h3>
+        <p>Want to sell your fabrics on FabricBazaar? Register as a seller and reach thousands of buyers across India.</p>
+        <a href="{{ url_for('auth.register') }}?role=company"
+           class="btn btn--white btn--sm" style="margin-top:1rem;display:inline-flex;">
+          Register as Seller →
+        </a>
+      </div>
+
+      <div class="contact-info-card">
+        <h3>Business Hours</h3>
+        <div style="font-size:.82rem;color:var(--text-muted);line-height:2;">
+          <div style="display:flex;justify-content:space-between;">
+            <span>Monday – Friday</span><strong style="color:var(--text-dark);">9am – 6pm</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span>Saturday</span><strong style="color:var(--text-dark);">10am – 4pm</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span>Sunday</span><strong style="color:var(--text-muted);">Closed</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
