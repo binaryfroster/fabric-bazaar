@@ -75,33 +75,38 @@ def _progress(order):
     return idx, len(PIPELINE), pct
 
 
-def _order_json(order):
+def _order_json(order, show_pii=False):
     events = (OrderTracking.query
               .filter_by(order_id=order.id, is_public=True)
               .order_by(OrderTracking.timestamp.desc()).all())
     idx, total, pct = _progress(order)
+
+    masked_name = (order.first_name[:1] + '***') if order.first_name else 'Customer'
+    masked_email = (order.email[:2] + '***@***') if order.email else ''
+    masked_pin = (order.postal_code[:3] + '***') if order.postal_code else ''
+
     return {
         'order_number':       order.order_number,
         'status':             order.status,
         'status_label':       order.status.replace('_', ' ').title(),
         'payment_status':     order.payment_status,
-        'total':              str(order.total),
+        'total':              str(order.total) if show_pii else None,
         'created_at':         order.created_at.isoformat(),
         'estimated_delivery': order.estimated_delivery.isoformat() if order.estimated_delivery else None,
         'tracking_number':    order.tracking_number,
         'progress_pct':       pct,
         'customer': {
-            'name':  order.full_name,
-            'email': order.email,
+            'name':  order.full_name if show_pii else masked_name,
+            'email': order.email if show_pii else masked_email,
         },
         'shipping': {
-            'address': order.full_address,
+            'address': order.full_address if show_pii else 'Protected delivery address',
             'city':    order.city,
             'state':   order.state,
-            'pincode': order.postal_code,
+            'pincode': order.postal_code if show_pii else masked_pin,
         },
         'items': [
-            {'name': i.product_name, 'qty': i.quantity, 'price': str(i.price)}
+            {'name': i.product_name, 'qty': i.quantity, 'price': str(i.price) if show_pii else None}
             for i in order.items
         ],
         'events': [
@@ -137,7 +142,8 @@ def track_search():
 def track_order(order_number):
     """
     Public tracking page — no login required.
-    Anyone with the order number can view status (intentional, like courier sites).
+    Anyone with the order number can view status (like courier sites),
+    with PII/address masked unless logged in as the order owner or admin.
     """
     order = Order.query.filter_by(order_number=order_number.upper().strip()).first()
     if not order:
@@ -150,6 +156,10 @@ def track_order(order_number):
 
     idx, total_steps, pct = _progress(order)
     is_negative = order.status in NEGATIVE_STATUSES
+    is_owner = (
+        current_user.is_authenticated and
+        (current_user.id == order.user_id or current_user.is_admin)
+    )
 
     return render_template('tracking/track.html',
                            order=order,
@@ -159,6 +169,7 @@ def track_order(order_number):
                            progress_idx=idx,
                            progress_pct=pct,
                            is_negative=is_negative,
+                           is_owner=is_owner,
                            OrderTracking=OrderTracking)
 
 
@@ -168,14 +179,18 @@ def track_order(order_number):
 def api_order(order_number):
     """
     GET /api/order/<order_number>
-    Returns full order + tracking timeline as JSON.
-    Public endpoint — returns limited info (no raw PII) for unauthenticated callers.
+    Returns order + tracking timeline as JSON.
+    Public endpoint — returns redacted PII unless caller is authenticated owner or admin.
     """
     order = Order.query.filter_by(order_number=order_number.upper().strip()).first()
     if not order:
         return jsonify({'success': False, 'error': 'Order not found'}), 404
 
-    return jsonify({'success': True, 'order': _order_json(order)})
+    is_owner = (
+        current_user.is_authenticated and
+        (current_user.id == order.user_id or current_user.is_admin)
+    )
+    return jsonify({'success': True, 'order': _order_json(order, show_pii=is_owner)})
 
 
 @tracking_bp.route('/api/order/update-status', methods=['POST'])

@@ -409,4 +409,9 @@ def payment_failed():
 @checkout_bp.route('/confirmation/<order_number>')
 def confirmation(order_number):
     order = Order.query.filter_by(order_number=order_number).first_or_404()
+    is_owner = current_user.is_authenticated and order.user_id == current_user.id
+    is_guest = session.get('pending_order') == order_number
+    if not (is_owner or is_guest or (current_user.is_authenticated and current_user.is_admin)):
+        flash('Please sign in to view this order confirmation.', 'warning')
+        return redirect(url_for('auth.login', next=request.path))
     return render_template('order_confirmation.html', order=order)

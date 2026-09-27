@@ -346,7 +346,9 @@ def cancel_order(order_id):
 @company_required
 def confirm_order(order_id):
     comp  = current_user.company
-    order = Order.query.get_or_404(order_id)
+    order = (Order.query.join(OrderItem).join(Product)
+             .filter(Product.company_id == comp.id, Order.id == order_id)
+             .first_or_404())
     if order.status != 'pending':
         flash('Order cannot be confirmed.', 'warning')
         return redirect(url_for('company.orders'))
@@ -362,7 +364,9 @@ def confirm_order(order_id):
 @company_required
 def mark_processing(order_id):
     comp  = current_user.company
-    order = Order.query.get_or_404(order_id)
+    order = (Order.query.join(OrderItem).join(Product)
+             .filter(Product.company_id == comp.id, Order.id == order_id)
+             .first_or_404())
     if order.status not in ('confirmed', 'pending'):
         flash('Order cannot be marked as packed.', 'warning')
         return redirect(url_for('company.orders'))
@@ -379,7 +383,9 @@ def mark_processing(order_id):
 @company_required
 def ship_order(order_id):
     comp  = current_user.company
-    order = Order.query.get_or_404(order_id)
+    order = (Order.query.join(OrderItem).join(Product)
+             .filter(Product.company_id == comp.id, Order.id == order_id)
+             .first_or_404())
     if order.status not in ('processing', 'confirmed', 'pending'):
         flash('Order cannot be marked as shipped.', 'warning')
         return redirect(url_for('company.orders'))
@@ -398,7 +404,9 @@ def ship_order(order_id):
 @company_required
 def deliver_order(order_id):
     comp  = current_user.company
-    order = Order.query.get_or_404(order_id)
+    order = (Order.query.join(OrderItem).join(Product)
+             .filter(Product.company_id == comp.id, Order.id == order_id)
+             .first_or_404())
     if order.status in ('delivered', 'cancelled', 'refunded'):
         flash(f'Order is already {order.status}.', 'warning')
         return redirect(url_for('company.orders'))

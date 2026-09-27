@@ -8,8 +8,7 @@ from models.user import User
 class RegistrationForm(FlaskForm):
     role       = SelectField('I am registering as',
                              choices=[('customer', '🛍️  Customer — I want to buy products'),
-                                      ('company', '🏭  Company / Seller — I want to sell products'),
-                                      ('delivery', '🏍️  Delivery Partner — I deliver orders')],
+                                      ('company', '🏭  Company / Seller — I want to sell products')],
                              default='customer')
     first_name = StringField('First Name', validators=[DataRequired(), Length(min=2, max=64)])
     last_name  = StringField('Last Name',  validators=[DataRequired(), Length(min=2, max=64)])
