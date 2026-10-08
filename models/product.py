@@ -76,14 +76,14 @@ class Product(db.Model):
     stock       = db.Column(db.Integer, default=0, nullable=False)
     min_order_qty = db.Column(db.Integer, default=1)  # Wholesale minimum
     view_count  = db.Column(db.Integer, default=0, nullable=False)
-    is_active   = db.Column(db.Boolean, default=True, nullable=False)
-    is_featured = db.Column(db.Boolean, default=False)
-    is_new      = db.Column(db.Boolean, default=False)
-    is_bestseller = db.Column(db.Boolean, default=False)
+    is_active   = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    is_featured = db.Column(db.Boolean, default=False, index=True)
+    is_new      = db.Column(db.Boolean, default=False, index=True)
+    is_bestseller = db.Column(db.Boolean, default=False, index=True)
 
     # Foreign keys
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
-    company_id  = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True, index=True)
+    company_id  = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=True, index=True)
 
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at  = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -3,19 +3,36 @@ from extensions import db
 from flask import Blueprint, render_template, flash, redirect, url_for, request
 from sqlalchemy import or_, and_
 from models.product import Product, FABRIC_CATEGORIES
-from models.category import Category
+from models.category import Category, get_cached_categories
 from models.company import Company
 from forms.contact_forms import ContactForm
 
 main_bp = Blueprint('main', __name__)
 
+import time
+from sqlalchemy.orm import contains_eager
+
+_FEATURED_SELLERS_CACHE = {'data': None, 'timestamp': 0}
+
+
+def _get_cached_featured_sellers(ttl_seconds=300):
+    now = time.time()
+    if _FEATURED_SELLERS_CACHE['data'] is None or (now - _FEATURED_SELLERS_CACHE['timestamp']) > ttl_seconds:
+        _FEATURED_SELLERS_CACHE['data'] = (
+            Company.query.filter_by(is_featured=True, is_active=True, is_verified=True).limit(6).all()
+        )
+        _FEATURED_SELLERS_CACHE['timestamp'] = now
+    return _FEATURED_SELLERS_CACHE['data']
+
 
 def _public_products():
-    """Products visible to the public — from verified sellers or admin-added."""
+    """Products visible to the public — from verified sellers or admin-added.
+    Eagerly loads the associated Company in a single SQL query to prevent N+1 overhead."""
     return (
         Product.query
-        .filter(Product.is_active == True)
         .outerjoin(Company, Product.company_id == Company.id)
+        .options(contains_eager(Product.company))
+        .filter(Product.is_active == True)
         .filter(or_(
             Product.company_id == None,
             and_(Company.is_verified == True, Company.is_active == True)
@@ -34,10 +51,8 @@ def index():
     bestsellers       = (_public_products()
                          .filter(Product.is_bestseller == True)
                          .limit(8).all())
-    featured_companies = (Company.query
-                          .filter_by(is_featured=True, is_active=True, is_verified=True)
-                          .limit(6).all())
-    categories = Category.query.order_by(Category.sort_order).limit(8).all()
+    featured_companies = _get_cached_featured_sellers()
+    categories = get_cached_categories()[:8]
 
     return render_template('index.html',
                            featured_products=featured_products,

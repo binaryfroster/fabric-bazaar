@@ -43,9 +43,9 @@ class Company(db.Model):
     banner        = db.Column(db.String(256))
 
     # Status
-    is_verified   = db.Column(db.Boolean, default=False)   # Admin approved
-    is_active     = db.Column(db.Boolean, default=True)
-    is_featured   = db.Column(db.Boolean, default=False)
+    is_verified   = db.Column(db.Boolean, default=False, index=True)   # Admin approved
+    is_active     = db.Column(db.Boolean, default=True, index=True)
+    is_featured   = db.Column(db.Boolean, default=False, index=True)
 
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at    = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

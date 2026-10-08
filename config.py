@@ -136,12 +136,16 @@ class ProductionConfig(Config):
             )
 
         # ── Serverless-friendly connection handling ────────────────────────────
-        # On Vercel each request is an isolated invocation; rely on the database's
-        # own connection pooler (Supabase pooler) and open/close per request.
+        # On Vercel, warm containers reuse connections via QueuePool against the
+        # Supabase transaction pooler (port 6543) without per-request TLS overhead.
         if _is_serverless():
-            from sqlalchemy.pool import NullPool
+            from sqlalchemy.pool import QueuePool
             app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-                'poolclass': NullPool,
+                'poolclass': QueuePool,
+                'pool_size': 2,
+                'max_overflow': 2,
+                'pool_timeout': 10,
+                'pool_recycle': 300,
                 'pool_pre_ping': True,
                 'connect_args': {'sslmode': 'require'},
             }

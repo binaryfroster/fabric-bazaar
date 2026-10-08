@@ -110,14 +110,17 @@ def create_app(config_name=None):
     @app.context_processor
     def inject_globals():
         from routes.cart import _get_cart_count
-        from models.category import Category
-        from models.company import Company
+        from models.category import get_cached_categories
         from flask_login import current_user
 
         cart_count = _get_cart_count()
-        categories = Category.query.order_by(Category.sort_order).all()
-        pending_companies_count = Company.query.filter_by(
-            is_verified=False, is_active=True).count()
+        categories = get_cached_categories()
+
+        pending_companies_count = 0
+        if current_user.is_authenticated and getattr(current_user, 'is_admin', False):
+            from models.company import Company
+            pending_companies_count = Company.query.filter_by(
+                is_verified=False, is_active=True).count()
 
         unread_messages = 0
         try:
@@ -244,9 +247,11 @@ def bootstrap_database(app, seed=False):
 
 
 # On serverless (Vercel) there is no start.sh to create the schema. Opt in with
-# AUTO_INIT_DB=1 to create tables (and seed an empty DB) on cold start. Prefer
-# seeding once locally against DATABASE_URL for faster cold starts in production.
-if os.environ.get('AUTO_INIT_DB') == '1':
+# AUTO_INIT_DB=1 to create tables (and seed an empty DB). On Vercel, schema is already
+# created and seeded, so avoid table-inspection delays on every serverless cold start.
+if os.environ.get('AUTO_INIT_DB') == '1' and not os.environ.get('VERCEL'):
+    bootstrap_database(app, seed=os.environ.get('AUTO_SEED', '1') == '1')
+elif os.environ.get('FORCE_INIT_DB') == '1':
     bootstrap_database(app, seed=os.environ.get('AUTO_SEED', '1') == '1')
 
 

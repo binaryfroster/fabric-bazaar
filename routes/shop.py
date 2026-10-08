@@ -3,17 +3,32 @@ from flask import Blueprint, render_template, request, current_app
 from sqlalchemy import or_, and_
 from extensions import db
 from models.product import Product, FABRIC_CATEGORIES, MATERIALS, COLORS, SIZES
-from models.category import Category
+from models.category import Category, get_cached_categories
 from models.company import Company
+import time
+from sqlalchemy.orm import contains_eager
 
 shop_bp = Blueprint('shop', __name__)
 
+_VERIFIED_COMPANIES_CACHE = {'data': None, 'timestamp': 0}
+
+
+def _get_cached_verified_companies(ttl_seconds=300):
+    now = time.time()
+    if _VERIFIED_COMPANIES_CACHE['data'] is None or (now - _VERIFIED_COMPANIES_CACHE['timestamp']) > ttl_seconds:
+        _VERIFIED_COMPANIES_CACHE['data'] = (
+            Company.query.filter_by(is_active=True, is_verified=True).order_by(Company.name).all()
+        )
+        _VERIFIED_COMPANIES_CACHE['timestamp'] = now
+    return _VERIFIED_COMPANIES_CACHE['data']
+
 
 def _public_products():
-    """Base query: only products from verified+active companies."""
+    """Base query: only products from verified+active companies with eager company loading."""
     return (Product.query
-            .filter(Product.is_active == True)
             .outerjoin(Company, Product.company_id == Company.id)
+            .options(contains_eager(Product.company))
+            .filter(Product.is_active == True)
             .filter(or_(
                 Product.company_id == None,
                 and_(Company.is_verified == True, Company.is_active == True)
@@ -83,10 +98,8 @@ def index():
     pagination = q.paginate(page=page, per_page=per_page, error_out=False)
     products   = pagination.items
 
-    categories = Category.query.order_by(Category.sort_order).all()
-    companies  = (Company.query
-                  .filter_by(is_active=True, is_verified=True)
-                  .order_by(Company.name).all())
+    categories = get_cached_categories()
+    companies  = _get_cached_verified_companies()
 
     return render_template('shop.html',
                            products=products,
